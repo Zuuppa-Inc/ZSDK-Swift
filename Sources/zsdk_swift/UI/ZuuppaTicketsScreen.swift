@@ -22,13 +22,22 @@ public struct ZuuppaTicketsScreen: View {
     /// - Parameters:
     ///   - eventId: The Zuuppa event to sell tickets for.
     ///   - config: Backend configuration. Defaults to Zuuppa production.
+    ///   - onWalletPayment: Optional. Supply this when the embedding app has its
+    ///     own crypto wallet: a "Pay with app wallet" button then appears for
+    ///     crypto-enabled events, and this closure is invoked to sign + submit the
+    ///     payment. See ``ZuuppaWalletPaymentHandler``.
     ///   - onFinish: Called when the buyer dismisses the flow.
     public init(
         eventId: String,
         config: ZuuppaConfig = .default,
+        onWalletPayment: ZuuppaWalletPaymentHandler? = nil,
         onFinish: @escaping () -> Void = {}
     ) {
-        _model = State(initialValue: TicketFlowModel(eventID: eventId, config: config))
+        _model = State(initialValue: TicketFlowModel(
+            eventID: eventId,
+            config: config,
+            walletHandler: onWalletPayment
+        ))
         self.onFinish = onFinish
     }
 
@@ -167,10 +176,11 @@ public extension View {
     func zuuppaTickets(
         isPresented: Binding<Bool>,
         eventId: String,
-        config: ZuuppaConfig = .default
+        config: ZuuppaConfig = .default,
+        onWalletPayment: ZuuppaWalletPaymentHandler? = nil
     ) -> some View {
         fullScreenCover(isPresented: isPresented) {
-            ZuuppaTicketsScreen(eventId: eventId, config: config) {
+            ZuuppaTicketsScreen(eventId: eventId, config: config, onWalletPayment: onWalletPayment) {
                 isPresented.wrappedValue = false
             }
         }

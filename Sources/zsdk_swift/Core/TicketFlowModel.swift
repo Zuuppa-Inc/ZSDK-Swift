@@ -22,6 +22,7 @@ final class TicketFlowModel {
         let orderID: String
         let depositAddress: String
         let token: String
+        let tokenMint: String?
         let decimals: Int
         let amountBaseUnits: String
     }
@@ -38,8 +39,21 @@ final class TicketFlowModel {
     private let auth: SupabaseAuth
     private let api: ZuuppaAPI
 
+    /// Host-supplied wallet handler. When present, the ticket-selection screen
+    /// shows a "Pay with app wallet" button that hands payment off to the host's
+    /// own wallet instead of the QR deposit flow.
+    private let walletHandler: ZuuppaWalletPaymentHandler?
+
     private(set) var step: Step = .loading
     private(set) var event: Event?
+
+    /// Whether a host wallet handler is available (gates the wallet button).
+    var hasWalletHandler: Bool { walletHandler != nil }
+
+    /// Inline error shown on the ticket-selection pay bar (e.g. the host wallet
+    /// failed or the buyer cancelled). Cleared when a checkout starts or the
+    /// selection changes.
+    private(set) var checkoutError: String?
 
     /// The step to return to when the buyer taps back on the error screen. Nil
     /// when the error came from the initial load (no prior screen — back closes
@@ -55,9 +69,14 @@ final class TicketFlowModel {
     private(set) var tokenPriceUSD: Double?
     private(set) var btcMinPlatformFeeSats: Int?
 
-    init(eventID: String, config: ZuuppaConfig = .default) {
+    init(
+        eventID: String,
+        config: ZuuppaConfig = .default,
+        walletHandler: ZuuppaWalletPaymentHandler? = nil
+    ) {
         self.eventID = eventID
         self.config = config
+        self.walletHandler = walletHandler
         let auth = SupabaseAuth(config: config)
         self.auth = auth
         self.api = ZuuppaAPI(config: config, auth: auth)
@@ -196,6 +215,7 @@ final class TicketFlowModel {
 
     /// Free RSVP path — no payment.
     func checkoutFree() async {
+        checkoutError = nil
         step = .loading
         do {
             let result = try await api.freeCheckout(eventID: eventID, items: selectedItems)
@@ -211,19 +231,77 @@ final class TicketFlowModel {
     /// Starts the external-crypto flow: creates the order and hands the QR
     /// details to the payment screen.
     func checkoutExternalCrypto() async {
+        checkoutError = nil
         step = .loading
         do {
             let r = try await api.externalCryptoCheckout(eventID: eventID, items: selectedItems)
-            step = .externalCryptoPayment(.init(
-                orderID: r.orderID,
-                depositAddress: r.depositAddress,
-                token: r.paymentToken,
-                decimals: r.decimals,
-                amountBaseUnits: r.amountBaseUnits
-            ))
+            step = .externalCryptoPayment(payment(from: r))
         } catch {
             setError(message(for: error), returnTo: .ticketSelection)
         }
+    }
+
+    /// App-wallet flow: create the same external-crypto order, hand the payment
+    /// details to the host's wallet to sign+submit, then reuse the QR path's
+    /// status-poll screen to confirm. The backend matches the payment by the
+    /// unique deposit address, so the wallet's returned signature isn't sent
+    /// anywhere — it's display-only.
+    ///
+    /// On any failure (order creation, or the wallet failing / the buyer
+    /// cancelling) the buyer is returned to ticket selection with an inline
+    /// error, where they can retry or use the QR / card buttons instead.
+    func payWithAppWallet() async {
+        guard let walletHandler else { return }   // Button only shows when set.
+        checkoutError = nil
+        step = .loading
+
+        // 1. Create the external-crypto order.
+        let payment: ExternalCryptoPayment
+        do {
+            let r = try await api.externalCryptoCheckout(eventID: eventID, items: selectedItems)
+            payment = self.payment(from: r)
+        } catch {
+            checkoutError = message(for: error)
+            step = .ticketSelection
+            return
+        }
+
+        // 2. Hand off to the host wallet to sign + submit the transfer.
+        do {
+            _ = try await walletHandler(ZuuppaCryptoPaymentRequest(
+                orderID: payment.orderID,
+                chain: "solana",
+                token: payment.token,
+                tokenMint: payment.tokenMint,
+                decimals: payment.decimals,
+                amountBaseUnits: payment.amountBaseUnits,
+                depositAddress: payment.depositAddress
+            ))
+        } catch {
+            checkoutError = "The wallet payment was cancelled or couldn't be completed. Please try again."
+            step = .ticketSelection
+            return
+        }
+
+        // 3. Funds are en route — reuse the status-poll screen to confirm.
+        step = .externalCryptoPayment(payment)
+    }
+
+    /// Clears the inline checkout error (e.g. when the buyer edits their cart).
+    func clearCheckoutError() {
+        checkoutError = nil
+    }
+
+    /// Maps a checkout response into the payment struct the crypto screen needs.
+    private func payment(from r: ExternalCryptoCheckoutResponse) -> ExternalCryptoPayment {
+        .init(
+            orderID: r.orderID,
+            depositAddress: r.depositAddress,
+            token: r.paymentToken,
+            tokenMint: r.tokenMint,
+            decimals: r.decimals,
+            amountBaseUnits: r.amountBaseUnits
+        )
     }
 
     /// Fetches the current external-crypto order status. The crypto screen owns

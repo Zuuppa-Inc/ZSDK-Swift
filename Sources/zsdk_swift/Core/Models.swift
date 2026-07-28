@@ -205,6 +205,7 @@ struct StripeConfirmResponse: Decodable {
 struct ExternalCryptoCheckoutResponse: Decodable {
     let orderID: String
     let paymentToken: String
+    let tokenMint: String?
     let decimals: Int
     let depositAddress: String
     let amountBaseUnits: String
@@ -212,6 +213,7 @@ struct ExternalCryptoCheckoutResponse: Decodable {
     enum CodingKeys: String, CodingKey {
         case orderID = "order_id"
         case paymentToken = "payment_token"
+        case tokenMint = "token_mint"
         case decimals
         case depositAddress = "deposit_address"
         case amountBaseUnits = "amount_base_units"
