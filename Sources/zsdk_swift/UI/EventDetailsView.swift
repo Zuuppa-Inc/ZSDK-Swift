@@ -41,7 +41,7 @@ struct EventDetailsView: View {
                             Spacer().frame(height: 24)
                             ticketsSection(event)
 
-                            if let location = locationText(event) {
+                            if let location = locationSectionText(event) {
                                 Spacer().frame(height: 24)
                                 section("LOCATION")
                                 Spacer().frame(height: 8)
@@ -79,8 +79,10 @@ struct EventDetailsView: View {
     private func header(_ event: Event) -> some View {
         HStack {
             Button(action: onBack) {
-                MaterialIcon(.arrowBack, size: 24, color: ZTheme.text)
-                    .frame(width: 48, height: 48)
+                Image(systemName: "arrow.left")
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundStyle(ZTheme.text)
+                    .frame(width: 56, height: 56)
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Back")
@@ -317,6 +319,14 @@ struct EventDetailsView: View {
     private func locationText(_ event: Event) -> String? {
         let value = event.venueName ?? event.addressText
         return (value?.isEmpty == false) ? value : nil
+    }
+
+    /// The LOCATION section prefers the full address (matching the app, which
+    /// uses `addressText` when present and only falls back to the venue name).
+    private func locationSectionText(_ event: Event) -> String? {
+        if let address = event.addressText, !address.isEmpty { return address }
+        if let venue = event.venueName, !venue.isEmpty { return venue }
+        return nil
     }
 
     /// Matches the app's `EventDetailScreen` RSVP-bar label logic.

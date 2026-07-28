@@ -48,7 +48,7 @@ public struct ZuuppaTicketsScreen: View {
         switch model.step {
         // These draw their own header, use a Cancel button, or (confirmation)
         // dismiss via the Done button — so no nav-bar close ✕.
-        case .eventDetails, .ticketSelection, .externalCryptoPayment, .confirmation:
+        case .loading, .auth, .eventDetails, .ticketSelection, .externalCryptoPayment, .confirmation:
             return false
         default:
             return true
@@ -86,10 +86,13 @@ public struct ZuuppaTicketsScreen: View {
     private var content: some View {
         switch model.step {
         case .loading:
-            ProgressView()
-                .tint(ZTheme.primary)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(ZTheme.background)
+            ZStack(alignment: .top) {
+                ProgressView()
+                    .tint(ZTheme.primary)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(ZTheme.background)
+                loadingHeader
+            }
 
         case .auth:
             AuthView(model: model)
@@ -113,6 +116,23 @@ public struct ZuuppaTicketsScreen: View {
         case .error(let message):
             errorView(message)
         }
+    }
+
+    /// A transparent back-arrow header shown over the initial loading spinner,
+    /// so the SDK's own header is present from the first frame (instead of the
+    /// default nav-bar ✕ flashing until the event loads).
+    private var loadingHeader: some View {
+        HStack {
+            Button(action: onFinish) {
+                Image(systemName: "arrow.left")
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundStyle(ZTheme.text)
+                    .frame(width: 56, height: 56)
+            }
+            .accessibilityLabel("Back")
+            Spacer()
+        }
+        .padding(.horizontal, 4)
     }
 
     private func errorView(_ message: String) -> some View {
