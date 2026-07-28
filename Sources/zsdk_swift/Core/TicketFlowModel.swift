@@ -13,6 +13,11 @@ final class TicketFlowModel {
         case eventDetails
         case ticketSelection
         case externalCryptoPayment(ExternalCryptoPayment)
+        /// App-wallet path: a plain "processing payment" screen shown the instant
+        /// the buyer taps pay, while order creation, the wallet hand-off, and the
+        /// confirmation poll all run in the background. Resolves to `.confirmation`
+        /// or `.error` — the buyer never sees the QR/deposit screen.
+        case walletProcessing
         case confirmation(Confirmation)
         case error(String)
     }
@@ -49,11 +54,6 @@ final class TicketFlowModel {
 
     /// Whether a host wallet handler is available (gates the wallet button).
     var hasWalletHandler: Bool { walletHandler != nil }
-
-    /// Inline error shown on the ticket-selection pay bar (e.g. the host wallet
-    /// failed or the buyer cancelled). Cleared when a checkout starts or the
-    /// selection changes.
-    private(set) var checkoutError: String?
 
     /// The step to return to when the buyer taps back on the error screen. Nil
     /// when the error came from the initial load (no prior screen — back closes
@@ -215,7 +215,6 @@ final class TicketFlowModel {
 
     /// Free RSVP path — no payment.
     func checkoutFree() async {
-        checkoutError = nil
         step = .loading
         do {
             let result = try await api.freeCheckout(eventID: eventID, items: selectedItems)
@@ -231,7 +230,6 @@ final class TicketFlowModel {
     /// Starts the external-crypto flow: creates the order and hands the QR
     /// details to the payment screen.
     func checkoutExternalCrypto() async {
-        checkoutError = nil
         step = .loading
         do {
             let r = try await api.externalCryptoCheckout(eventID: eventID, items: selectedItems)
@@ -241,28 +239,37 @@ final class TicketFlowModel {
         }
     }
 
-    /// App-wallet flow: create the same external-crypto order, hand the payment
-    /// details to the host's wallet to sign+submit, then reuse the QR path's
-    /// status-poll screen to confirm. The backend matches the payment by the
-    /// unique deposit address, so the wallet's returned signature isn't sent
-    /// anywhere — it's display-only.
+    /// App-wallet flow. Shows a plain "processing payment" screen *immediately*
+    /// and does all the real work in the background: create the external-crypto
+    /// order, hand its details to the host's wallet to sign+submit, then poll the
+    /// order status until tickets are issued. The buyer never sees the QR/deposit
+    /// screen — from their side it's just "processing" → success or error.
     ///
-    /// On any failure (order creation, or the wallet failing / the buyer
-    /// cancelling) the buyer is returned to ticket selection with an inline
-    /// error, where they can retry or use the QR / card buttons instead.
-    func payWithAppWallet() async {
+    /// The backend matches the payment by the unique deposit address, so the
+    /// wallet's returned signature isn't sent anywhere — it's display-only.
+    ///
+    /// On any failure (order creation, the wallet failing / the buyer cancelling,
+    /// or the payment expiring) the flow routes to the error screen; its back
+    /// button returns to ticket selection, where the buyer can retry or use the
+    /// QR / card buttons instead.
+    func payWithAppWallet() {
         guard let walletHandler else { return }   // Button only shows when set.
-        checkoutError = nil
-        step = .loading
+        // Go straight to the processing screen; everything else is background.
+        step = .walletProcessing
 
+        Task { await runWalletPayment(walletHandler) }
+    }
+
+    /// The background orchestration behind `.walletProcessing`. Never touches the
+    /// QR screen: it either lands on `.confirmation` or `.error`.
+    private func runWalletPayment(_ walletHandler: ZuuppaWalletPaymentHandler) async {
         // 1. Create the external-crypto order.
         let payment: ExternalCryptoPayment
         do {
             let r = try await api.externalCryptoCheckout(eventID: eventID, items: selectedItems)
             payment = self.payment(from: r)
         } catch {
-            checkoutError = message(for: error)
-            step = .ticketSelection
+            walletPaymentFailed(message(for: error))
             return
         }
 
@@ -278,18 +285,44 @@ final class TicketFlowModel {
                 depositAddress: payment.depositAddress
             ))
         } catch {
-            checkoutError = "The wallet payment was cancelled or couldn't be completed. Please try again."
-            step = .ticketSelection
+            walletPaymentFailed("The wallet payment was cancelled or couldn't be completed. Please try again.")
             return
         }
 
-        // 3. Funds are en route — reuse the status-poll screen to confirm.
-        step = .externalCryptoPayment(payment)
+        // 3. Funds are en route — poll until the server confirms (tickets issued)
+        //    or the payment terminally fails, staying on the processing screen the
+        //    whole time.
+        await pollWalletPayment(orderID: payment.orderID)
     }
 
-    /// Clears the inline checkout error (e.g. when the buyer edits their cart).
-    func clearCheckoutError() {
-        checkoutError = nil
+    /// Polls the order status until success or terminal failure. Runs while the
+    /// processing screen is shown; transient poll errors are ignored and retried.
+    private func pollWalletPayment(orderID: String) async {
+        while true {
+            // Stop if the buyer navigated away from the processing screen.
+            guard case .walletProcessing = step else { return }
+            if let res = try? await api.externalCryptoStatus(orderID: orderID) {
+                if res.isPaid {
+                    step = .confirmation(.init(
+                        ticketCount: res.ticketCount ?? totalTicketCount,
+                        isPending: res.orderStatus != "completed"
+                    ))
+                    return
+                }
+                if res.isFailed {
+                    walletPaymentFailed(res.message?.isEmpty == false
+                        ? res.message!
+                        : "The payment could not be completed. You have not been charged for a ticket.")
+                    return
+                }
+            }
+            try? await Task.sleep(for: .seconds(3))
+        }
+    }
+
+    /// Routes a failed app-wallet payment to the error screen (back → selection).
+    private func walletPaymentFailed(_ message: String) {
+        setError(message, returnTo: .ticketSelection)
     }
 
     /// Maps a checkout response into the payment struct the crypto screen needs.

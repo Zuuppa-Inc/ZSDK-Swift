@@ -219,16 +219,6 @@ struct TicketSelectionView: View {
     private func buttons(_ event: Event) -> some View {
         let enabled = model.hasSelection
 
-        // Inline error from a failed / cancelled checkout (e.g. the host wallet).
-        if let checkoutError = model.checkoutError {
-            Text(checkoutError)
-                .font(.system(size: 13))
-                .foregroundStyle(ZTheme.red)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: .infinity)
-            Spacer().frame(height: 10)
-        }
-
         if !event.isPaid || model.buyerTotalCents == 0 {
             ZButton(label: "Confirm RSVP", isEnabled: enabled) {
                 Task { await model.checkoutFree() }
@@ -271,8 +261,6 @@ struct TicketSelectionView: View {
 
     private func setQuantity(_ tt: TicketType, _ value: Int) {
         model.quantities[tt.id] = max(0, min(value, maxAllowed(tt)))
-        // Editing the cart clears any stale checkout error.
-        model.clearCheckoutError()
     }
 
     /// Matches the app: the per-order cap applies only to FREE tickets. Paid

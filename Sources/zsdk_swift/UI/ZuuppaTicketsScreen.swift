@@ -87,6 +87,9 @@ public struct ZuuppaTicketsScreen: View {
         case .externalCryptoPayment(let payment):
             ExternalCryptoView(model: model, payment: payment)
 
+        case .walletProcessing:
+            WalletProcessingView()
+
         case .confirmation(let confirmation):
             ConfirmationView(
                 model: model,
