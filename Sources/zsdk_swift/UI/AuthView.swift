@@ -165,12 +165,12 @@ struct AuthView: View {
 
                 Spacer().frame(height: 16)
                 Button(method == .email ? "Continue with Phone" : "Continue with Email") {
-                    withAnimation {
-                        method = method == .email ? .phone : .email
-                        contact = ""
-                        errorText = nil
-                    }
-                    focused = true
+                    method = method == .email ? .phone : .email
+                    contact = ""
+                    errorText = nil
+                    // The field is rebuilt (its .id changes with the keyboard),
+                    // so re-focus on the next runloop once the new field exists.
+                    Task { @MainActor in focused = true }
                 }
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(ZTheme.primary)
@@ -294,6 +294,10 @@ struct AuthView: View {
                     RoundedRectangle(cornerRadius: 8)
                         .stroke(focused ? ZTheme.primary : .clear, lineWidth: 2)
                 )
+                // SwiftUI won't change a live field's keyboard, so key the field
+                // to the keyboard type — switching email/phone rebuilds it with
+                // the correct keyboard.
+                .id(keyboard)
         }
     }
 
