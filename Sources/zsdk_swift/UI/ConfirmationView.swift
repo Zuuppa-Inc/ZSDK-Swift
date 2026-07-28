@@ -67,7 +67,14 @@ struct ConfirmationView: View {
 
                     Spacer().frame(height: 24)
 
-                    downloadCard
+                    Rectangle()
+                        .fill(ZTheme.secondaryText)
+                        .frame(height: 1)
+                        .frame(maxWidth: .infinity)
+
+                    Spacer().frame(height: 24)
+
+                    downloadSection
 
                     // Leave room for the pinned Done button.
                     Spacer().frame(height: 80)
@@ -111,35 +118,39 @@ struct ConfirmationView: View {
         }
     }
 
-    // MARK: - Download card
+    // MARK: - Download section
 
-    private var downloadCard: some View {
+    private var downloadSection: some View {
         VStack(spacing: 12) {
-            Text("Download Zuuppa to access your tickets")
-                .font(.system(size: 15, weight: .bold))
+            Text("Download Zuuppa to\naccess your tickets")
+                .font(.system(size: 25, weight: .heavy))
                 .foregroundStyle(ZTheme.text)
                 .multilineTextAlignment(.center)
             Text("Sign in with the same email or phone number you used here, and your tickets will be waiting.")
-                .font(.system(size: 13))
+                .font(.system(size: 15))
                 .foregroundStyle(ZTheme.secondaryText)
                 .multilineTextAlignment(.center)
 
             Link(destination: appStoreURL) {
-                HStack(spacing: 8) {
-                    Image(systemName: "apple.logo")
-                        .font(.system(size: 16, weight: .semibold))
-                    Text("Get it on the App Store")
-                        .font(.system(size: 15, weight: .bold))
-                }
-                .frame(maxWidth: .infinity)
-                .frame(height: ZTheme.buttonHeight)
-                .background(ZTheme.primary, in: RoundedRectangle(cornerRadius: ZTheme.buttonCornerRadius))
-                .foregroundStyle(ZTheme.onPrimary)
+                appStoreBadge
+                    .frame(height: 52)
             }
             .padding(.top, 2)
+            .accessibilityLabel("Download on the App Store")
         }
-        .padding(20)
         .frame(maxWidth: .infinity)
-        .background(ZTheme.cardOverlay, in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    /// The official "Download on the App Store" badge (white variant), bundled
+    /// as a loose resource and loaded by file URL. Rendered as-is (it's already
+    /// the correct white artwork on a transparent background).
+    @ViewBuilder
+    private var appStoreBadge: some View {
+        if let url = Bundle.module.url(forResource: "app-store-badge", withExtension: "png"),
+           let ui = UIImage(contentsOfFile: url.path) {
+            Image(uiImage: ui)
+                .resizable()
+                .scaledToFit()
+        }
     }
 }
