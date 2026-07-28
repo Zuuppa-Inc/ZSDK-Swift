@@ -41,6 +41,11 @@ final class TicketFlowModel {
     private(set) var step: Step = .loading
     private(set) var event: Event?
 
+    /// The step to return to when the buyer taps back on the error screen. Nil
+    /// when the error came from the initial load (no prior screen — back closes
+    /// the whole flow instead).
+    private(set) var errorReturnStep: Step?
+
     /// Buyer's selected quantity per ticket-type id.
     var quantities: [String: Int] = [:]
 
@@ -86,7 +91,8 @@ final class TicketFlowModel {
             // breakdown (fees + crypto conversions) is ready before sign-in.
             await loadPricing()
         } catch {
-            step = .error(message(for: error))
+            // Initial load failed — there's no prior screen, so back closes.
+            setError(message(for: error), returnTo: nil)
         }
     }
 
@@ -105,15 +111,11 @@ final class TicketFlowModel {
 
     // MARK: - Navigation
 
-    /// Buyer tapped "Buy Tickets" / "RSVP". Checkout requires a signed-in user,
-    /// so prompt for auth first if needed; otherwise load pricing and continue.
+    /// Buyer tapped "Buy Tickets" / "RSVP". Always show the auth screen: signed-
+    /// out buyers sign in, and signed-in buyers confirm (or switch) the account
+    /// they're checking out with before proceeding.
     func showTicketSelection() async {
-        if await auth.isAuthenticated {
-            await loadPricing()
-            step = .ticketSelection
-        } else {
-            step = .auth
-        }
+        step = .auth
     }
 
     func backToEventDetails() {
@@ -202,7 +204,7 @@ final class TicketFlowModel {
                 isPending: (result.status ?? "completed") != "completed"
             ))
         } catch {
-            step = .error(message(for: error))
+            setError(message(for: error), returnTo: .ticketSelection)
         }
     }
 
@@ -220,7 +222,7 @@ final class TicketFlowModel {
                 amountBaseUnits: r.amountBaseUnits
             ))
         } catch {
-            step = .error(message(for: error))
+            setError(message(for: error), returnTo: .ticketSelection)
         }
     }
 
@@ -258,15 +260,50 @@ final class TicketFlowModel {
                 isPending: result.status != "completed"
             ))
         } catch {
-            step = .error(message(for: error))
+            setError(message(for: error), returnTo: .ticketSelection)
         }
     }
 
     func fail(_ message: String) {
+        // Errors surfaced directly by a screen (e.g. Stripe sheet) came from
+        // checkout, so back should return to ticket selection.
+        setError(message, returnTo: .ticketSelection)
+    }
+
+    // MARK: - Error routing
+
+    /// Transitions to the error step, remembering where the back arrow should
+    /// return to. Pass `returnTo: nil` for errors with no prior screen (initial
+    /// load) — the error's back button then closes the whole flow.
+    private func setError(_ message: String, returnTo: Step?) {
+        errorReturnStep = returnTo
         step = .error(message)
     }
 
+    /// Returns from the error screen to the screen the buyer came from, if any.
+    /// Returns `false` when there's nothing to go back to (the caller should
+    /// close the flow instead).
+    @discardableResult
+    func backFromError() -> Bool {
+        guard let errorReturnStep else { return false }
+        step = errorReturnStep
+        self.errorReturnStep = nil
+        return true
+    }
+
     // MARK: - Auth helpers
+
+    /// The currently signed-in buyer's identity, if any — used by the auth
+    /// screen to show a "signed in as …" confirmation instead of the entry form.
+    func currentIdentity() async -> AuthIdentity? {
+        await auth.currentIdentity()
+    }
+
+    /// Signs the current buyer out (so they can check out with a different
+    /// account). The auth screen then falls back to the sign-in form.
+    func signOut() async {
+        await auth.signOut()
+    }
 
     func requestOTP(_ channel: OTPChannel) async throws {
         try await auth.requestOTP(channel)

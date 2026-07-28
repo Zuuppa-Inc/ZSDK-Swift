@@ -40,41 +40,13 @@ public struct ZuuppaTicketsScreen: View {
         Color(hex: model.event?.accentColor, default: .accentColor)
     }
 
-    /// Several steps draw their own header (or use a bottom Cancel button), so
-    /// they hide the nav bar (matching the app): event details (transparent
-    /// header), checkout (Cancel button), and external-crypto (its own
-    /// "Crypto payment" header).
-    private var showsNavBar: Bool {
-        switch model.step {
-        // These draw their own header, use a Cancel button, or (confirmation)
-        // dismiss via the Done button — so no nav-bar close ✕.
-        case .loading, .auth, .eventDetails, .ticketSelection, .externalCryptoPayment, .confirmation:
-            return false
-        default:
-            return true
-        }
-    }
-
     public var body: some View {
         NavigationStack {
             content
                 .background(ZTheme.background)
-                .toolbar(showsNavBar ? .visible : .hidden, for: .navigationBar)
-                .toolbarBackground(ZTheme.background, for: .navigationBar)
-                .toolbarBackground(.visible, for: .navigationBar)
-                .toolbarColorScheme(.dark, for: .navigationBar)
-                .toolbar {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button {
-                            onFinish()
-                        } label: {
-                            Image(systemName: "xmark")
-                                .fontWeight(.semibold)
-                                .foregroundStyle(ZTheme.text)
-                        }
-                        .accessibilityLabel("Close")
-                    }
-                }
+                // Every step draws its own header (back arrow / Cancel / Done),
+                // so the nav bar stays hidden throughout — no default ✕.
+                .toolbar(.hidden, for: .navigationBar)
         }
         .preferredColorScheme(.dark)
         .task {
@@ -136,24 +108,55 @@ public struct ZuuppaTicketsScreen: View {
     }
 
     private func errorView(_ message: String) -> some View {
-        VStack(spacing: 16) {
-            Image(systemName: "exclamationmark.triangle")
-                .font(.system(size: 44))
-                .foregroundStyle(ZTheme.orange)
-            Text("Something went wrong")
-                .font(.system(size: 18, weight: .bold))
-                .foregroundStyle(ZTheme.text)
-            Text(message)
-                .font(.system(size: 14))
-                .foregroundStyle(ZTheme.secondaryText)
-                .multilineTextAlignment(.center)
-            ZButton(label: "Close") { onFinish() }
-                .padding(.horizontal, 40)
-                .padding(.top, 8)
+        ZStack(alignment: .top) {
+            VStack(spacing: 16) {
+                Image(systemName: "exclamationmark.triangle")
+                    .font(.system(size: 44))
+                    .foregroundStyle(ZTheme.orange)
+                Text("Something went wrong")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(ZTheme.text)
+                Text(message)
+                    .font(.system(size: 14))
+                    .foregroundStyle(ZTheme.secondaryText)
+                    .multilineTextAlignment(.center)
+            }
+            .padding(32)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(ZTheme.background)
+
+            errorHeader
         }
-        .padding(32)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(ZTheme.background)
+    }
+
+    /// A transparent header for the error screen: a back arrow (left) that
+    /// returns to the screen the buyer came from — or closes the flow if the
+    /// error happened on the initial load — and a ✕ (right) that always closes
+    /// the whole SDK.
+    private var errorHeader: some View {
+        HStack {
+            Button {
+                // Back to the previous screen, or close if there's nowhere to go.
+                if !model.backFromError() { onFinish() }
+            } label: {
+                Image(systemName: "arrow.left")
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundStyle(ZTheme.text)
+                    .frame(width: 56, height: 56)
+            }
+            .accessibilityLabel("Back")
+
+            Spacer()
+
+            Button(action: onFinish) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundStyle(ZTheme.text)
+                    .frame(width: 56, height: 56)
+            }
+            .accessibilityLabel("Close")
+        }
+        .padding(.horizontal, 4)
     }
 }
 
@@ -201,6 +204,16 @@ extension ZuuppaTicketsScreen {
 
 #Preview("Auth") {
     ZuuppaTicketsScreen(previewModel: .preview(step: .auth))
+}
+
+#Preview("Loading") {
+    ZuuppaTicketsScreen(previewModel: .preview(step: .loading))
+}
+
+#Preview("Error") {
+    ZuuppaTicketsScreen(previewModel: .preview(
+        step: .error("Network connection failed. Check your internet and try again.")
+    ))
 }
 
 // MARK: - Live preview against a real event

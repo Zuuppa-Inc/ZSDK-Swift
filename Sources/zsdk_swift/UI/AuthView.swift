@@ -20,6 +20,17 @@ struct AuthView: View {
         case email
     }
 
+    /// The screen's high-level state. A returning (signed-in) buyer first sees a
+    /// confirmation of the account they'll check out with; everyone else goes
+    /// straight to the sign-in form.
+    private enum Stage {
+        case checking      // resolving whether there's a signed-in account
+        case confirm       // signed in — confirm or switch account
+        case form          // sign-in form (entry / code)
+    }
+
+    @State private var stage: Stage = .checking
+    @State private var identity: AuthIdentity?
     @State private var method: Method = .phone
     @State private var otpSent = false
     @State private var contact = ""       // phone or email, before code is sent
@@ -29,6 +40,16 @@ struct AuthView: View {
     @FocusState private var focused: Bool
 
     private let side = ZTheme.sideMargin
+
+    /// Preview-only seed: when set, the view starts in the signed-in confirm
+    /// stage with this identity instead of resolving the session over the
+    /// network (which previews can't do).
+    private let previewIdentity: AuthIdentity?
+
+    init(model: TicketFlowModel) {
+        self.model = model
+        self.previewIdentity = nil
+    }
 
     private var channel: OTPChannel {
         method == .email ? .email(contact) : .phone(normalizedContact)
@@ -71,9 +92,32 @@ struct AuthView: View {
             }
             .padding(.horizontal, 4)
 
-            // The form, offset below the logo like the app (Positioned top: 35).
-            form
-                .padding(.top, 56)
+            // Body below the logo, offset like the app (Positioned top: 35).
+            Group {
+                switch stage {
+                case .checking:
+                    ProgressView()
+                        .tint(ZTheme.primary)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                case .confirm:
+                    confirmAccount
+                case .form:
+                    form
+                }
+            }
+            .padding(.top, 56)
+        }
+        .task {
+            // Previews seed an identity directly (no networking).
+            if let previewIdentity {
+                identity = previewIdentity
+                stage = .confirm
+                return
+            }
+            // Resolve the signed-in account once (refreshing the token if
+            // needed). Signed-in buyers confirm; everyone else signs in.
+            identity = await model.currentIdentity()
+            stage = (identity != nil) ? .confirm : .form
         }
     }
 
@@ -159,6 +203,67 @@ struct AuthView: View {
         "We sent a code to \(method == .email ? contact : normalizedContact)"
     }
 
+    // MARK: - Signed-in confirmation
+
+    /// Shown to a returning buyer: confirms which account they'll check out
+    /// with, with the option to continue or sign out and use a different one.
+    private var confirmAccount: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Spacer().frame(height: 10)
+
+            Text("You're signed in")
+                .font(.system(size: 28, weight: .bold))
+                .foregroundStyle(ZTheme.text)
+
+            Spacer().frame(height: 4)
+
+            Text("Your tickets will be tied to this account. Continue, or switch to a different one.")
+                .font(.system(size: ZTheme.fontSize))
+                .foregroundStyle(ZTheme.secondaryText)
+
+            Spacer().frame(height: 20)
+
+            // Account card: the email/phone this buyer is signed in as.
+            HStack(spacing: 12) {
+                Image(systemName: (identity?.email != nil) ? "envelope.fill" : "phone.fill")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(ZTheme.primary)
+                    .frame(width: 24)
+                Text(identity?.displayName ?? "your account")
+                    .font(.system(size: ZTheme.fontSize, weight: .semibold))
+                    .foregroundStyle(ZTheme.text)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                Spacer()
+            }
+            .padding(14)
+            .frame(maxWidth: .infinity)
+            .background(ZTheme.secondaryBackground, in: .rect(cornerRadius: 8))
+
+            if let errorText {
+                Spacer().frame(height: 12)
+                Text(errorText)
+                    .font(.system(size: 13))
+                    .foregroundStyle(ZTheme.red)
+            }
+
+            Spacer()
+
+            ZButton(label: "Continue", isBusy: isBusy) {
+                Task { await continueSignedIn() }
+            }
+
+            Spacer().frame(height: 10)
+
+            ZButton(label: "Use a different account", variant: .bare, foregroundColor: ZTheme.primary) {
+                Task { await switchAccount() }
+            }
+
+            Spacer().frame(height: 12)
+        }
+        .padding(.horizontal, side)
+    }
+
     /// A label-above-a-filled-box text field, ported from the app's
     /// `ZTextInput`: 14pt secondary-text label, an 8pt-radius box filled with
     /// the secondary background, 12pt padding, primary-colored focused border.
@@ -198,6 +303,29 @@ struct AuthView: View {
     }
 
     // MARK: - Actions
+
+    /// The signed-in buyer confirmed their account — proceed to checkout.
+    private func continueSignedIn() async {
+        errorText = nil
+        isBusy = true
+        defer { isBusy = false }
+        await model.didAuthenticate()
+    }
+
+    /// The buyer wants a different account — sign out and drop to the sign-in
+    /// form.
+    private func switchAccount() async {
+        await model.signOut()
+        identity = nil
+        withAnimation {
+            stage = .form
+            otpSent = false
+            contact = ""
+            code = ""
+            errorText = nil
+        }
+        focused = true
+    }
 
     private func primaryAction() async {
         errorText = nil
@@ -248,3 +376,21 @@ struct AuthView: View {
         }
     }
 }
+
+#if DEBUG
+extension AuthView {
+    /// Preview initializer that starts in the signed-in confirm stage with a
+    /// seeded identity, so the "you're signed in" state renders without a real
+    /// session.
+    init(model: TicketFlowModel, previewIdentity: AuthIdentity) {
+        self.model = model
+        self.previewIdentity = previewIdentity
+    }
+}
+
+#Preview("Auth — signed in") {
+    AuthView(model: .preview(step: .auth), previewIdentity: AuthIdentity(email: "buyer@example.com", phone: nil))
+        .background(ZTheme.background)
+        .preferredColorScheme(.dark)
+}
+#endif

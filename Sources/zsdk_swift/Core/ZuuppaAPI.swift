@@ -85,7 +85,7 @@ actor ZuuppaAPI {
     private func send<Body: Encodable, T: Decodable>(
         path: String, method: String, body: Body?, as type: T.Type, requiresAuth: Bool = true
     ) async throws -> T {
-        let token = await auth.accessToken
+        let token = await auth.validAccessToken()
         if requiresAuth, token == nil {
             throw ZuuppaError.notAuthenticated
         }

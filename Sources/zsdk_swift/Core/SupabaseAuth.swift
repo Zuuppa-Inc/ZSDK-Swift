@@ -30,6 +30,18 @@ public enum OTPChannel: Sendable {
     case phone(String)
 }
 
+/// The identity of the currently signed-in buyer, for the "signed in as …"
+/// confirmation shown before checkout.
+public struct AuthIdentity: Sendable, Equatable {
+    /// Email if the buyer signed in with email, else nil.
+    public let email: String?
+    /// Phone if the buyer signed in with phone, else nil.
+    public let phone: String?
+
+    /// A human-readable label for the account (email preferred, else phone).
+    public var displayName: String { email ?? phone ?? "your account" }
+}
+
 /// Minimal Supabase auth client covering exactly what the SDK needs: request an
 /// OTP, verify it, and hold onto the resulting session. Talks to Supabase's
 /// GoTrue REST API directly so the SDK doesn't need the full Supabase SDK.
@@ -48,18 +60,63 @@ actor SupabaseAuth {
     init(config: ZuuppaConfig, urlSession: URLSession = .shared) {
         self.config = config
         self.urlSession = urlSession
+        // The Keychain survives app deletion, so a reinstall could otherwise
+        // start already signed-in. UserDefaults IS wiped on delete, so we use a
+        // first-run flag to clear any stale Keychain session on a fresh install.
+        Self.clearSessionOnFirstRun(key: keychainKey)
         self.session = Self.loadSession(key: keychainKey)
     }
 
-    /// The current access token, if the buyer has a valid (non-expired) session.
-    var accessToken: String? {
-        guard let session, session.expiresAt > Date().addingTimeInterval(60) else {
+    /// A valid access token for the current session, refreshing transparently
+    /// when the current one has expired. Returns nil when there's no session, or
+    /// when the refresh token has been revoked (the buyer must sign in again).
+    ///
+    /// This is the token API the rest of the SDK should use — it keeps a
+    /// returning buyer signed in for as long as the refresh token lives (weeks),
+    /// rather than the ~1h access-token lifetime.
+    func validAccessToken() async -> String? {
+        guard let session else { return nil }
+
+        // Still valid (with a 60s safety margin) — use it as-is.
+        if session.expiresAt > Date().addingTimeInterval(60) {
+            return session.accessToken
+        }
+
+        // Expired: try to mint a new one from the refresh token.
+        guard let refreshToken = session.refreshToken else {
+            signOut()
             return nil
         }
-        return session.accessToken
+        do {
+            let refreshed = try await refresh(using: refreshToken)
+            self.session = refreshed
+            Self.saveSession(refreshed, key: keychainKey)
+            return refreshed.accessToken
+        } catch ZuuppaError.server {
+            // The refresh token was rejected (revoked/expired) — the session is
+            // dead, so clear it and force a fresh sign-in.
+            signOut()
+            return nil
+        } catch {
+            // Transient failure (e.g. no network) — keep the session so a later
+            // attempt can still refresh; just report "no token" for now.
+            return nil
+        }
     }
 
-    var isAuthenticated: Bool { accessToken != nil }
+    /// Whether the buyer has a usable session (refreshing if needed).
+    var isAuthenticated: Bool {
+        get async { await validAccessToken() != nil }
+    }
+
+    /// The email or phone of the currently signed-in buyer, read from the
+    /// session's JWT. Used to show "you're signed in as …" before checkout.
+    /// Refreshes the token first so a restored-but-expired session still
+    /// resolves an identity (or clears itself if the refresh token is dead).
+    func currentIdentity() async -> AuthIdentity? {
+        guard let token = await validAccessToken() else { return nil }
+        return Self.identity(fromJWT: token)
+    }
 
     // MARK: - OTP flow
 
@@ -92,6 +149,18 @@ actor SupabaseAuth {
         Self.saveSession(decoded, key: keychainKey)
     }
 
+    /// Exchanges a refresh token for a fresh session via GoTrue's
+    /// `grant_type=refresh_token`. Throws `ZuuppaError.server` when the token is
+    /// rejected (revoked/expired).
+    private func refresh(using refreshToken: String) async throws -> StoredSession {
+        let data = try await post(
+            path: "/auth/v1/token",
+            query: [URLQueryItem(name: "grant_type", value: "refresh_token")],
+            body: ["refresh_token": refreshToken]
+        )
+        return try decodeSession(from: data)
+    }
+
     /// Clears the stored session (sign-out).
     func signOut() {
         session = nil
@@ -100,8 +169,14 @@ actor SupabaseAuth {
 
     // MARK: - HTTP
 
-    private func post(path: String, body: [String: Any]) async throws -> Data {
-        let url = config.supabaseURL.appendingPathComponent(path)
+    private func post(path: String, query: [URLQueryItem] = [], body: [String: Any]) async throws -> Data {
+        var components = URLComponents(
+            url: config.supabaseURL.appendingPathComponent(path),
+            resolvingAgainstBaseURL: false
+        )
+        if !query.isEmpty { components?.queryItems = query }
+        guard let url = components?.url else { throw ZuuppaError.unknown }
+
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -146,6 +221,30 @@ actor SupabaseAuth {
         }
     }
 
+    /// Decodes the email/phone claims from a Supabase access token (JWT). Reads
+    /// the payload segment only — signature verification happens server-side on
+    /// every API call, so this is purely for display.
+    private static func identity(fromJWT token: String) -> AuthIdentity? {
+        let segments = token.split(separator: ".")
+        guard segments.count == 3 else { return nil }
+
+        // JWT uses base64url without padding; restore both to decode.
+        var base64 = String(segments[1])
+            .replacingOccurrences(of: "-", with: "+")
+            .replacingOccurrences(of: "_", with: "/")
+        while base64.count % 4 != 0 { base64.append("=") }
+
+        guard let data = Data(base64Encoded: base64),
+              let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return nil
+        }
+
+        let email = (obj["email"] as? String).flatMap { $0.isEmpty ? nil : $0 }
+        let phone = (obj["phone"] as? String).flatMap { $0.isEmpty ? nil : $0 }
+        guard email != nil || phone != nil else { return nil }
+        return AuthIdentity(email: email, phone: phone)
+    }
+
     /// Extracts a human-readable error from a Supabase error body.
     private static func errorMessage(from data: Data) -> String? {
         guard let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
@@ -178,5 +277,16 @@ private extension SupabaseAuth {
 
     static func deleteSession(key: String) {
         Keychain.delete(key: key)
+    }
+
+    /// On the very first launch after install, clear any Keychain session left
+    /// behind by a previous install (Keychain items survive app deletion, but
+    /// UserDefaults does not — so a missing flag means a fresh install).
+    static func clearSessionOnFirstRun(key: String) {
+        let flag = "com.zuuppa.sdk.hasLaunched"
+        let defaults = UserDefaults.standard
+        guard !defaults.bool(forKey: flag) else { return }
+        Keychain.delete(key: key)
+        defaults.set(true, forKey: flag)
     }
 }
