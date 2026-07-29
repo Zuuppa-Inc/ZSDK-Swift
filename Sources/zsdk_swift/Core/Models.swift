@@ -210,6 +210,39 @@ struct ReceiptResponse: Decodable {
     }
 }
 
+// MARK: - My Events
+
+/// One event hosted (or confirmed-cohosted) by a user, for the "My Events" list.
+/// Returned by `GET /users/{id}/hosted-events`.
+public struct HostedEvent: Identifiable, Decodable, Sendable, Hashable {
+    public let id: String
+    public let name: String
+    public let coverImageURL: String?
+    public let startAt: Date?
+    public let venueName: String?
+    public let timezone: String?
+    public let accentColor: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id, name, timezone
+        case coverImageURL = "cover_image_url"
+        case startAt = "start_at"
+        case venueName = "venue_name"
+        case accentColor = "accent_color"
+    }
+}
+
+/// Response from `GET /users/{id}/hosted-events`.
+struct HostedEventsResponse: Decodable {
+    let events: [HostedEvent]
+    let nextCursor: String?
+
+    enum CodingKeys: String, CodingKey {
+        case events
+        case nextCursor = "next_cursor"
+    }
+}
+
 // MARK: - Pricing
 
 /// Response from `GET /config/fees`.

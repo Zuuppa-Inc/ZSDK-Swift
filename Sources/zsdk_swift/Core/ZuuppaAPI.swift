@@ -89,6 +89,21 @@ actor ZuuppaAPI {
         return try await get("/tickets/me", query: query, as: MyTicketsResponse.self)
     }
 
+    /// Public, live events hosted or confirmed-cohosted by `userID`, with an
+    /// optional case-insensitive `search` over name + venue, paged by cursor.
+    func fetchHostedEvents(
+        userID: String, search: String?, cursor: String?, limit: Int = 24
+    ) async throws -> HostedEventsResponse {
+        var query = [URLQueryItem(name: "limit", value: "\(limit)")]
+        if let cursor { query.append(URLQueryItem(name: "cursor", value: cursor)) }
+        if let search, !search.isEmpty {
+            query.append(URLQueryItem(name: "search", value: search))
+        }
+        // These events are public — no sign-in required (the bearer is still
+        // attached when present, for the block check).
+        return try await get("/users/\(userID)/hosted-events", query: query, as: HostedEventsResponse.self, requiresAuth: false)
+    }
+
     /// The receipt link (blockchain explorer or Stripe receipt) for an order.
     func fetchReceipt(orderID: String) async throws -> ReceiptResponse {
         try await get("/orders/\(orderID)/receipt", as: ReceiptResponse.self)

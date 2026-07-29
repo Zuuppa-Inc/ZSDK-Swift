@@ -35,3 +35,11 @@
 //
 // Customize it with `ZuuppaMyTicketsConfig` (tabs, host filter, detail actions).
 // See `UI/ZuuppaMyTicketsScreen.swift`.
+//
+// To embed a list of the events a user hosts or co-hosts, use the chrome-less
+// `ZuuppaMyEventsList` — pass a user id (and optionally your own search text);
+// tapping an event opens the ticketing flow above:
+//
+//        ScrollView { ZuuppaMyEventsList(userId: hostUserId) }
+//
+// See `UI/ZuuppaMyEventsList.swift`.
