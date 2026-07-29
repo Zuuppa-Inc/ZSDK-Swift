@@ -45,9 +45,12 @@ extension Color {
 /// deposit address. Uses CoreImage so there's no third-party dependency.
 struct QRCodeView: View {
     let string: String
+    /// Error-correction level: "L", "M", "Q", or "H". Defaults to "M" (the
+    /// deposit-address usage); ticket QR uses "H" for extra scan resilience.
+    var correctionLevel: String = "M"
 
     var body: some View {
-        if let image = Self.generate(from: string) {
+        if let image = Self.generate(from: string, correctionLevel: correctionLevel) {
             Image(uiImage: image)
                 .interpolation(.none)
                 .resizable()
@@ -57,11 +60,11 @@ struct QRCodeView: View {
         }
     }
 
-    private static func generate(from string: String) -> UIImage? {
+    private static func generate(from string: String, correctionLevel: String) -> UIImage? {
         let context = CIContext()
         let filter = CIFilter.qrCodeGenerator()
         filter.message = Data(string.utf8)
-        filter.correctionLevel = "M"
+        filter.correctionLevel = correctionLevel
         guard let output = filter.outputImage else { return nil }
         // Scale up so the code is crisp when displayed large.
         let scaled = output.transformed(by: CGAffineTransform(scaleX: 10, y: 10))
@@ -93,6 +96,95 @@ func formatEventDateRange(start: Date?, end: Date?, timezone: String?) -> String
     let startStr = "\(dayMonth.string(from: start)) at \(time.string(from: start))"
     guard let end else { return "\(startStr) (\(tzLabel))" }
     return "\(startStr) - \(time.string(from: end)) (\(tzLabel))"
+}
+
+extension UIApplication {
+    /// The top-most view controller of the active foreground scene, for
+    /// presenting UIKit controllers (Stripe's sheet, `PKAddPassesViewController`,
+    /// `EKEventEditViewController`) from SwiftUI.
+    @MainActor
+    static func topViewController() -> UIViewController? {
+        let scene = shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .first { $0.activationState == .foregroundActive }
+        var top = scene?.windows.first(where: \.isKeyWindow)?.rootViewController
+        while let presented = top?.presentedViewController {
+            top = presented
+        }
+        return top
+    }
+}
+
+/// The group-card date, matching the app's `_buildGroupCard`: parsed to the
+/// DEVICE-local timezone and formatted "Aug 15, 2026 • 8:00 PM".
+func formatGroupCardDate(_ date: Date?) -> String {
+    guard let date else { return "" }
+    let formatter = DateFormatter()
+    formatter.locale = Locale(identifier: "en_US")
+    formatter.dateFormat = "MMM d, yyyy • h:mm a"
+    return formatter.string(from: date)
+}
+
+/// The detail-screen event date, matching the app's `formatDateTimeInTz`:
+/// in the event's timezone, formatted "Aug 15, 2026 at 8:00 PM".
+func formatEventDateTimeInTz(_ date: Date?, timezone: String?) -> String {
+    guard let date else { return "" }
+    let tz = timezone.flatMap { TimeZone(identifier: $0) } ?? .current
+    let formatter = DateFormatter()
+    formatter.locale = Locale(identifier: "en_US")
+    formatter.timeZone = tz
+    formatter.dateFormat = "MMM d, yyyy 'at' h:mm a"
+    return formatter.string(from: date)
+}
+
+/// A ticket-shaped clip path: a rectangle with CONCAVE (inward-scooped) cutouts
+/// at the four corners plus a semicircular notch on the left and right edges at
+/// the vertical midpoint. A 1:1 port of the app's `TicketClipper` — the Flutter
+/// arcs curve inward, so the corners are scooped, not rounded.
+///
+/// Traced as a single continuous outline whose corner/notch arcs sweep inward
+/// (each centered ON the boundary point), so there's no dependency on the
+/// even-odd rule and no outward bumps.
+struct TicketClipper: Shape {
+    var cornerRadius: CGFloat = 18
+    var notchRadius: CGFloat = 16
+
+    func path(in rect: CGRect) -> Path {
+        let w = rect.width
+        let h = rect.height
+        let cr = cornerRadius
+        let nr = notchRadius
+        let cy = h / 2
+
+        var path = Path()
+        path.move(to: CGPoint(x: cr, y: 0))
+        path.addLine(to: CGPoint(x: w - cr, y: 0))
+        // Top-right corner scoop (centered on the corner point).
+        path.addArc(center: CGPoint(x: w, y: 0), radius: cr,
+                    startAngle: .degrees(180), endAngle: .degrees(90), clockwise: true)
+        path.addLine(to: CGPoint(x: w, y: cy - nr))
+        // Right-edge notch.
+        path.addArc(center: CGPoint(x: w, y: cy), radius: nr,
+                    startAngle: .degrees(-90), endAngle: .degrees(90), clockwise: true)
+        path.addLine(to: CGPoint(x: w, y: h - cr))
+        // Bottom-right corner scoop.
+        path.addArc(center: CGPoint(x: w, y: h), radius: cr,
+                    startAngle: .degrees(-90), endAngle: .degrees(180), clockwise: true)
+        path.addLine(to: CGPoint(x: cr, y: h))
+        // Bottom-left corner scoop.
+        path.addArc(center: CGPoint(x: 0, y: h), radius: cr,
+                    startAngle: .degrees(0), endAngle: .degrees(-90), clockwise: true)
+        path.addLine(to: CGPoint(x: 0, y: cy + nr))
+        // Left-edge notch.
+        path.addArc(center: CGPoint(x: 0, y: cy), radius: nr,
+                    startAngle: .degrees(90), endAngle: .degrees(-90), clockwise: true)
+        path.addLine(to: CGPoint(x: 0, y: cr))
+        // Top-left corner scoop.
+        path.addArc(center: CGPoint(x: 0, y: 0), radius: cr,
+                    startAngle: .degrees(90), endAngle: .degrees(0), clockwise: true)
+        path.closeSubpath()
+        return path
+    }
 }
 
 /// Formats a base-unit crypto amount (e.g. satoshis) into a human string using

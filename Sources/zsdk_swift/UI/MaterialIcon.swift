@@ -23,6 +23,14 @@ enum MIcon: String {
     case editOutlined
     case arrowBack
     case share            // ios_share — the app's share glyph
+    case chevronRight
+    case accountBalanceWallet
+    case calendarToday
+    case mapOutlined
+    case receiptLong
+    case qrCode
+    case search
+    case close
 
     /// Unicode scalar for the glyph in MaterialIcons-Regular.
     var scalar: Unicode.Scalar {
@@ -46,6 +54,14 @@ enum MIcon: String {
         case .editOutlined: code = 0xf00d
         case .arrowBack: code = 0xe092
         case .share: code = 0xe34d
+        case .chevronRight: code = 0xe15f
+        case .accountBalanceWallet: code = 0xe041
+        case .calendarToday: code = 0xe122
+        case .mapOutlined: code = 0xf1ae
+        case .receiptLong: code = 0xe50d
+        case .qrCode: code = 0xe4f5
+        case .search: code = 0xe567
+        case .close: code = 0xe16a
         }
         return Unicode.Scalar(code)!
     }

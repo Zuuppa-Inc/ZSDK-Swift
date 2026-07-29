@@ -72,10 +72,56 @@ actor ZuuppaAPI {
         return try await post("/events/\(eventID)/checkout", body: body, as: FreeCheckoutResponse.self)
     }
 
+    // MARK: - My Tickets
+
+    /// The signed-in buyer's tickets for one filter tab (upcoming / past /
+    /// canceled), paged by cursor. `hostID`, when set, restricts to events
+    /// hosted by that user id (server-side).
+    func fetchMyTickets(
+        filter: String, cursor: String?, limit: Int = 20, hostID: String? = nil
+    ) async throws -> MyTicketsResponse {
+        var query = [
+            URLQueryItem(name: "filter", value: filter),
+            URLQueryItem(name: "limit", value: "\(limit)"),
+        ]
+        if let cursor { query.append(URLQueryItem(name: "cursor", value: cursor)) }
+        if let hostID { query.append(URLQueryItem(name: "host_id", value: hostID)) }
+        return try await get("/tickets/me", query: query, as: MyTicketsResponse.self)
+    }
+
+    /// The receipt link (blockchain explorer or Stripe receipt) for an order.
+    func fetchReceipt(orderID: String) async throws -> ReceiptResponse {
+        try await get("/orders/\(orderID)/receipt", as: ReceiptResponse.self)
+    }
+
+    /// The raw `.pkpass` bytes for a ticket, for adding to Apple Wallet. The
+    /// body is binary (not JSON), so this bypasses the JSON decoder used by the
+    /// other endpoints.
+    func fetchApplePass(ticketToken: String) async throws -> Data {
+        guard let token = await auth.validAccessToken() else {
+            throw ZuuppaError.notAuthenticated
+        }
+        let url = config.apiBaseURL.appendingPathComponent("/tickets/\(ticketToken)/pass")
+        var request = URLRequest(url: url)
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        do {
+            let (data, response) = try await urlSession.data(for: request)
+            guard let http = response as? HTTPURLResponse else { throw ZuuppaError.unknown }
+            guard (200..<300).contains(http.statusCode) else {
+                throw ZuuppaError.server(status: http.statusCode, message: Self.errorMessage(from: data))
+            }
+            return data
+        } catch let error as URLError {
+            throw ZuuppaError.network(error)
+        }
+    }
+
     // MARK: - Request plumbing
 
-    private func get<T: Decodable>(_ path: String, as type: T.Type, requiresAuth: Bool = true) async throws -> T {
-        try await send(path: path, method: "GET", body: Optional<EmptyBody>.none, as: type, requiresAuth: requiresAuth)
+    private func get<T: Decodable>(
+        _ path: String, query: [URLQueryItem] = [], as type: T.Type, requiresAuth: Bool = true
+    ) async throws -> T {
+        try await send(path: path, query: query, method: "GET", body: Optional<EmptyBody>.none, as: type, requiresAuth: requiresAuth)
     }
 
     private func post<Body: Encodable, T: Decodable>(_ path: String, body: Body, as type: T.Type) async throws -> T {
@@ -83,14 +129,22 @@ actor ZuuppaAPI {
     }
 
     private func send<Body: Encodable, T: Decodable>(
-        path: String, method: String, body: Body?, as type: T.Type, requiresAuth: Bool = true
+        path: String, query: [URLQueryItem] = [], method: String, body: Body?, as type: T.Type, requiresAuth: Bool = true
     ) async throws -> T {
         let token = await auth.validAccessToken()
         if requiresAuth, token == nil {
             throw ZuuppaError.notAuthenticated
         }
 
-        let url = config.apiBaseURL.appendingPathComponent(path)
+        // Build the URL via URLComponents so query items are encoded correctly
+        // (appendingPathComponent would percent-encode a "?").
+        var components = URLComponents(
+            url: config.apiBaseURL.appendingPathComponent(path),
+            resolvingAgainstBaseURL: false
+        )
+        if !query.isEmpty { components?.queryItems = query }
+        guard let url = components?.url else { throw ZuuppaError.unknown }
+
         var request = URLRequest(url: url)
         request.httpMethod = method
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")

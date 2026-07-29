@@ -75,7 +75,7 @@ struct StripePayButton: View {
     /// the result.
     @MainActor
     private func present(_ sheet: PaymentSheet) async -> PaymentSheetResult {
-        guard let presenter = Self.topViewController() else {
+        guard let presenter = UIApplication.topViewController() else {
             return .failed(error: ZuuppaError.unknown)
         }
         return await withCheckedContinuation { continuation in
@@ -83,17 +83,5 @@ struct StripePayButton: View {
                 continuation.resume(returning: result)
             }
         }
-    }
-
-    @MainActor
-    private static func topViewController() -> UIViewController? {
-        let scene = UIApplication.shared.connectedScenes
-            .compactMap { $0 as? UIWindowScene }
-            .first { $0.activationState == .foregroundActive }
-        var top = scene?.windows.first(where: \.isKeyWindow)?.rootViewController
-        while let presented = top?.presentedViewController {
-            top = presented
-        }
-        return top
     }
 }

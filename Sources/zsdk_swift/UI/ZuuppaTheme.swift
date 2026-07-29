@@ -21,6 +21,17 @@ enum ZTheme {
     static let red = Color(hex6: 0xFF8080)
     static let orange = Color(hex6: 0xFFD280)
 
+    // Ticket card (the white QR card on the detail screen) — from the app's
+    // dark scheme `ticketCard*`.
+    static let ticketCardBackground = Color(hex6: 0xFFFFFF)
+    static let ticketCardText = Color(hex6: 0x141414)
+    static let ticketCardSubtext = Color(hex6: 0x141414).opacity(0.54)
+
+    // Colors that don't flip with the scheme (the app's `fixedWhite`/`fixedBlack`),
+    // used over the group card's cover image.
+    static let fixedWhite = Color.white
+    static let fixedBlack = Color.black
+
     // MARK: - Sizes (ZuuppaSizes)
 
     static let sideMargin: CGFloat = 20

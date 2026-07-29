@@ -19,3 +19,19 @@
 //        .zuuppaTickets(isPresented: $showTickets, eventId: "evt-uuid")
 //
 // See `UI/ZuuppaTicketsScreen.swift` for the public entry point.
+//
+// To let a signed-in user see the tickets they already own, present the
+// "My Tickets" screen instead. It gates on the same OTP sign-in, lists the
+// user's tickets grouped by event (Upcoming / Past / Cancelled), and opens a
+// detail screen with a scannable QR code per ticket:
+//
+//        .fullScreenCover(isPresented: $showMine) {
+//            ZuuppaMyTicketsScreen { showMine = false }
+//        }
+//
+//   …or the convenience modifier:
+//
+//        .zuuppaMyTickets(isPresented: $showMine)
+//
+// Customize it with `ZuuppaMyTicketsConfig` (tabs, host filter, detail actions).
+// See `UI/ZuuppaMyTicketsScreen.swift`.

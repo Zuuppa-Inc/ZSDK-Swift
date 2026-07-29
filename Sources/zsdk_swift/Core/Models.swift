@@ -130,6 +130,86 @@ public struct Profile: Decodable, Sendable, Hashable {
     public var displayName: String { fullName ?? username ?? "Host" }
 }
 
+// MARK: - My Tickets
+
+/// One ticket owned by the signed-in buyer, as returned by `GET /tickets/me`.
+/// Flattens the event fields the server joins in, so a single object carries
+/// everything the list + detail screens need.
+public struct MyTicket: Identifiable, Decodable, Sendable, Hashable {
+    /// The ticket token doubles as a stable identity (it's unique per ticket).
+    public var id: String { ticketToken }
+
+    public let eventID: String
+    public let hostID: String?
+    public let eventName: String?
+    public let eventVenueName: String?
+    public let eventCoverImageURL: String?
+    public let eventStatus: String?
+    public let eventStartAt: Date?
+    public let eventEndAt: Date?
+    public let eventAddressText: String?
+    public let eventTimezone: String?
+    public let eventAccentColor: String?
+    public let hostDisplayName: String?
+    public let ticketToken: String
+    public let ticketTypeName: String?
+    /// "active", "used", or "canceled".
+    public let status: String
+    public let orderID: String?
+    public let orderTotalCents: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case status
+        case eventID = "event_id"
+        case hostID = "host_id"
+        case eventName = "event_name"
+        case eventVenueName = "event_venue_name"
+        case eventCoverImageURL = "event_cover_image_url"
+        case eventStatus = "event_status"
+        case eventStartAt = "event_start_at"
+        case eventEndAt = "event_end_at"
+        case eventAddressText = "event_address_text"
+        case eventTimezone = "event_timezone"
+        case eventAccentColor = "event_accent_color"
+        case hostDisplayName = "host_display_name"
+        case ticketToken = "ticket_token"
+        case ticketTypeName = "ticket_type_name"
+        case orderID = "order_id"
+        case orderTotalCents = "order_total_cents"
+    }
+
+    /// Whether this ticket has been cancelled (whole-event or individual refund).
+    public var isCanceled: Bool { status == "canceled" }
+}
+
+/// Response from `GET /tickets/me`.
+struct MyTicketsResponse: Decodable {
+    let tickets: [MyTicket]
+    let nextCursor: String?
+
+    enum CodingKeys: String, CodingKey {
+        case tickets
+        case nextCursor = "next_cursor"
+    }
+}
+
+/// Response from `GET /orders/{id}/receipt`.
+struct ReceiptResponse: Decodable {
+    let explorerURL: String?
+    let receiptURL: String?
+
+    enum CodingKeys: String, CodingKey {
+        case explorerURL = "explorer_url"
+        case receiptURL = "receipt_url"
+    }
+
+    /// The link to open: the blockchain explorer for crypto orders, else the
+    /// Stripe receipt. Matches the app, which prefers `explorer_url`.
+    var url: URL? {
+        (explorerURL ?? receiptURL).flatMap(URL.init(string:))
+    }
+}
+
 // MARK: - Pricing
 
 /// Response from `GET /config/fees`.
