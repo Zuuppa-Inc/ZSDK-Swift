@@ -22,14 +22,14 @@ struct WalletProcessingView: View {
 
             Spacer().frame(height: 28)
 
-            Text("Processing payment")
+            Text(L("processing_payment", "Processing payment"))
                 .font(.system(size: 20, weight: .bold))
                 .foregroundStyle(ZTheme.text)
                 .multilineTextAlignment(.center)
 
             Spacer().frame(height: 8)
 
-            Text("Confirming your payment and issuing your tickets. This usually takes a few seconds — please keep this screen open.")
+            Text(L("processing_payment_sub", "Confirming your payment and issuing your tickets. This usually takes a few seconds — please keep this screen open."))
                 .font(.system(size: 14))
                 .foregroundStyle(ZTheme.secondaryText)
                 .multilineTextAlignment(.center)

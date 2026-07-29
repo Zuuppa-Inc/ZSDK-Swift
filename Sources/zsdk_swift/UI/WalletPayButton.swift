@@ -8,7 +8,7 @@ import SwiftUI
 struct WalletPayButton: View {
 
     let model: TicketFlowModel
-    var label: String = "Pay with app wallet"
+    var label: String = L("pay_with_wallet", "Pay with app wallet")
     var isEnabled: Bool = true
 
     var body: some View {

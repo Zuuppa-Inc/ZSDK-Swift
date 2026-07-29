@@ -109,8 +109,8 @@ struct TicketSelectionView: View {
     }
 
     private func availabilityNote(_ tt: TicketType) -> String? {
-        if tt.isSoldOut { return "Sold out" }
-        if let remaining = tt.remaining { return "\(remaining) remaining" }
+        if tt.isSoldOut { return L("sold_out", "Sold out") }
+        if let remaining = tt.remaining { return Lf("remaining", "%@ remaining", "\(remaining)") }
         return nil
     }
 
@@ -160,7 +160,7 @@ struct TicketSelectionView: View {
         let tickets = model.totalTicketCount
         // Tickets subtotal line.
         breakdownLine(
-            label: "\(tickets) ticket\(tickets == 1 ? "" : "s")",
+            label: LticketCount(tickets),
             value: model.subtotalCents.centsAsUSD
         )
 
@@ -168,7 +168,7 @@ struct TicketSelectionView: View {
         if model.feesCents > 0 {
             Spacer().frame(height: 4)
             HStack(alignment: .top) {
-                Text("Zuuppa fee")
+                Text(L("zuuppa_fee", "Zuuppa fee"))
                     .font(.system(size: 14))
                     .foregroundStyle(ZTheme.secondaryText)
                 Spacer()
@@ -188,7 +188,7 @@ struct TicketSelectionView: View {
         // Total line (bold, with crypto conversion underneath).
         Spacer().frame(height: 4)
         HStack(alignment: .top) {
-            Text("Total")
+            Text(L("total", "Total"))
                 .font(.system(size: 16, weight: .bold))
                 .foregroundStyle(ZTheme.text)
             Spacer()
@@ -220,13 +220,13 @@ struct TicketSelectionView: View {
         let enabled = model.hasSelection
 
         if !event.isPaid || model.buyerTotalCents == 0 {
-            ZButton(label: "Confirm RSVP", isEnabled: enabled) {
+            ZButton(label: L("confirm_rsvp", "Confirm RSVP"), isEnabled: enabled) {
                 Task { await model.checkoutFree() }
             }
         } else {
             if event.isStripeEnabled {
                 // Runs the Stripe PaymentSheet flow, styled as the app's ZButton.
-                StripePayButton(model: model, label: "Pay with Card", isEnabled: enabled)
+                StripePayButton(model: model, label: L("pay_with_card", "Pay with Card"), isEnabled: enabled)
             }
             if event.isCryptoEnabled {
                 // When the host app has its own wallet, offer the automatic
@@ -239,7 +239,7 @@ struct TicketSelectionView: View {
                 }
                 Spacer().frame(height: 10)
                 ZButton(
-                    label: "Pay with \(event.paymentTokenOrDefault)",
+                    label: Lf("pay_with_token", "Pay with %@", event.paymentTokenOrDefault),
                     variant: (event.isStripeEnabled || walletPay) ? .outlined : .filled,
                     foregroundColor: (event.isStripeEnabled || walletPay) ? ZTheme.primary : ZTheme.onPrimary,
                     isEnabled: enabled
@@ -252,7 +252,7 @@ struct TicketSelectionView: View {
         // Bare "Cancel" button returns to the event details screen (the app
         // pops this screen).
         Spacer().frame(height: 10)
-        ZButton(label: "Cancel", variant: .bare, foregroundColor: ZTheme.secondaryText) {
+        ZButton(label: L("cancel", "Cancel"), variant: .bare, foregroundColor: ZTheme.secondaryText) {
             model.backToEventDetails()
         }
     }

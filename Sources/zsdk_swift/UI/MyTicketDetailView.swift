@@ -46,7 +46,7 @@ struct MyTicketDetailView: View {
                     carousel
 
                     if group.tickets.count > 1 {
-                        Text("Swipe for more tickets")
+                        Text(L("swipe_more", "Swipe for more tickets"))
                             .font(.system(size: 12))
                             .foregroundStyle(ZTheme.secondaryText)
                             .padding(.vertical, 8)
@@ -73,13 +73,13 @@ struct MyTicketDetailView: View {
         }
         .background(ZTheme.background)
         .toolbar(.hidden, for: .navigationBar)
-        .confirmationDialog("Select Order", isPresented: $showReceiptPicker, titleVisibility: .visible) {
+        .confirmationDialog(L("select_order", "Select Order"), isPresented: $showReceiptPicker, titleVisibility: .visible) {
             ForEach(Array(group.paidOrderIDs.enumerated()), id: \.element) { index, orderID in
                 Button(orderLabel(index: index, orderID: orderID)) {
                     Task { await openReceipt(orderID: orderID) }
                 }
             }
-            Button("Cancel", role: .cancel) {}
+            Button(L("cancel", "Cancel"), role: .cancel) {}
         }
     }
 
@@ -88,7 +88,7 @@ struct MyTicketDetailView: View {
     /// Centered "Tickets" title with a back arrow, matching `ZuuppaScreenHeader`.
     private var header: some View {
         ZStack {
-            Text("Tickets")
+            Text(L("tickets_title", "Tickets"))
                 .font(.system(size: 20, weight: .bold))
                 .foregroundStyle(ZTheme.text)
 
@@ -97,7 +97,7 @@ struct MyTicketDetailView: View {
                     MaterialIcon(.arrowBack, size: 24, color: ZTheme.text)
                         .frame(width: 48, height: 48)
                 }
-                .accessibilityLabel("Back")
+                .accessibilityLabel(L("back", "Back"))
                 Spacer()
             }
         }
@@ -108,7 +108,7 @@ struct MyTicketDetailView: View {
     /// "Order N – $X.XX", matching the app's order picker rows.
     private func orderLabel(index: Int, orderID: String) -> String {
         let cents = group.tickets.first { $0.orderID == orderID }?.orderTotalCents ?? 0
-        return "Order \(index + 1) – \(cents.centsAsUSD)"
+        return Lf("order_n", "Order %1$@ – %2$@", "\(index + 1)", cents.centsAsUSD)
     }
 
     // MARK: - Cancelled banner
@@ -116,7 +116,7 @@ struct MyTicketDetailView: View {
     private var cancelledBanner: some View {
         HStack(spacing: 8) {
             MaterialIcon(.cancelOutlined, size: 20, color: ZTheme.red)
-            Text("This event has been cancelled")
+            Text(L("event_cancelled_banner", "This event has been cancelled"))
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(ZTheme.red)
             Spacer()
@@ -136,7 +136,7 @@ struct MyTicketDetailView: View {
             }
 
             VStack(alignment: .leading, spacing: 0) {
-                Text(group.eventName ?? "Event")
+                Text(group.eventName ?? L("event_fallback", "Event"))
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(ZTheme.text)
                     .lineLimit(2)
@@ -208,7 +208,7 @@ struct MyTicketDetailView: View {
                 wordmark
                     .frame(height: 20)
                 VStack(alignment: .trailing, spacing: 2) {
-                    Text(group.eventName ?? "Event")
+                    Text(group.eventName ?? L("event_fallback", "Event"))
                         .font(.system(size: 14, weight: .bold))
                         .foregroundStyle(ZTheme.ticketCardText)
                         .multilineTextAlignment(.trailing)
@@ -230,7 +230,7 @@ struct MyTicketDetailView: View {
                     if ticket.isCanceled {
                         VStack(spacing: 8) {
                             MaterialIcon(.cancelOutlined, size: 48, color: ZTheme.red)
-                            Text("Ticket Canceled")
+                            Text(L("ticket_canceled", "Ticket Canceled"))
                                 .font(.system(size: 14, weight: .semibold))
                                 .foregroundStyle(ZTheme.red)
                         }
@@ -262,9 +262,9 @@ struct MyTicketDetailView: View {
 
     private func statusPill(_ status: String) -> some View {
         let (label, color): (String, Color) = switch status {
-        case "active": ("Active", ZTheme.confirmedStatus)
-        case "canceled": ("Canceled", ZTheme.red)
-        default: ("Used", ZTheme.secondaryText)
+        case "active": (L("status_active", "Active"), ZTheme.confirmedStatus)
+        case "canceled": (L("status_canceled", "Canceled"), ZTheme.red)
+        default: (L("status_used", "Used"), ZTheme.secondaryText)
         }
         return Text(label)
             .font(.system(size: 12, weight: .semibold))
@@ -293,22 +293,22 @@ struct MyTicketDetailView: View {
     private var actions: some View {
         VStack(spacing: 8) {
             if options.showAddToAppleWallet && !isCanceled && !group.activeTicketTokens.isEmpty {
-                MyTicketActionRow(label: "Add to Apple Wallet", icon: .accountBalanceWallet, isBusy: walletBusy) {
+                MyTicketActionRow(label: L("add_apple_wallet", "Add to Apple Wallet"), icon: .accountBalanceWallet, isBusy: walletBusy) {
                     Task { await addToWallet() }
                 }
             }
             if options.showAddToCalendar && !isCanceled && group.startAt != nil {
-                MyTicketActionRow(label: "Add to Calendar", icon: .calendarToday) {
+                MyTicketActionRow(label: L("add_calendar", "Add to Calendar"), icon: .calendarToday) {
                     addToCalendar()
                 }
             }
             if options.showOpenInMaps && !isCanceled && hasLocation {
-                MyTicketActionRow(label: "Open in Maps", icon: .mapOutlined) {
+                MyTicketActionRow(label: L("open_maps", "Open in Maps"), icon: .mapOutlined) {
                     openInMaps()
                 }
             }
             if options.showViewReceipt && !group.paidOrderIDs.isEmpty {
-                MyTicketActionRow(label: "View Receipt", icon: .receiptLong, isBusy: receiptBusy) {
+                MyTicketActionRow(label: L("view_receipt", "View Receipt"), icon: .receiptLong, isBusy: receiptBusy) {
                     viewReceipt()
                 }
             }
@@ -331,10 +331,10 @@ struct MyTicketDetailView: View {
                 passes.append(try await model.applePass(ticketToken: token))
             }
             if !walletPresenter.present(passData: passes) {
-                actionError = "Couldn't add these tickets to Apple Wallet."
+                actionError = L("couldnt_add_wallet", "Couldn't add these tickets to Apple Wallet.")
             }
         } catch {
-            actionError = (error as? ZuuppaError)?.errorDescription ?? "Couldn't load your Wallet passes."
+            actionError = (error as? ZuuppaError)?.errorDescription ?? L("couldnt_load_passes", "Couldn't load your Wallet passes.")
         }
     }
 
@@ -342,7 +342,7 @@ struct MyTicketDetailView: View {
         guard let start = group.startAt else { return }
         let store = EKEventStore()
         let event = EKEvent(eventStore: store)
-        event.title = group.eventName ?? "Event"
+        event.title = group.eventName ?? L("event_fallback", "Event")
         event.startDate = start
         // Default to a 2-hour event when no end time, matching the app.
         event.endDate = group.endAt ?? start.addingTimeInterval(2 * 60 * 60)
@@ -387,10 +387,10 @@ struct MyTicketDetailView: View {
             if let url = try await model.receiptURL(orderID: orderID) {
                 await UIApplication.shared.open(url)
             } else {
-                actionError = "No receipt is available for this order."
+                actionError = L("no_receipt", "No receipt is available for this order.")
             }
         } catch {
-            actionError = (error as? ZuuppaError)?.errorDescription ?? "Couldn't load the receipt."
+            actionError = (error as? ZuuppaError)?.errorDescription ?? L("couldnt_load_receipt", "Couldn't load the receipt.")
         }
     }
 

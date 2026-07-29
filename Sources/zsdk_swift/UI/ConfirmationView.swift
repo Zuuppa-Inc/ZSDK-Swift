@@ -33,7 +33,7 @@ struct ConfirmationView: View {
 
                     Spacer().frame(height: 16)
 
-                    Text("GOT YOUR TICKETS!")
+                    Text(L("got_your_tickets", "GOT YOUR TICKETS!"))
                         .font(.system(size: 20, weight: .black))
                         .foregroundStyle(ZTheme.text)
                         .multilineTextAlignment(.center)
@@ -83,7 +83,7 @@ struct ConfirmationView: View {
             }
             .scrollIndicators(.hidden)
 
-            ZButton(label: "Done") { onDone() }
+            ZButton(label: L("done", "Done")) { onDone() }
                 .padding(.horizontal, side)
                 .padding(.bottom, 16)
         }
@@ -122,11 +122,11 @@ struct ConfirmationView: View {
 
     private var downloadSection: some View {
         VStack(spacing: 12) {
-            Text("Download Zuuppa to\naccess your tickets")
+            Text(L("download_title", "Download Zuuppa to\naccess your tickets"))
                 .font(.system(size: 25, weight: .heavy))
                 .foregroundStyle(ZTheme.text)
                 .multilineTextAlignment(.center)
-            Text("Sign in with the same email or phone number you used here, and your tickets will be waiting.")
+            Text(L("download_sub", "Sign in with the same email or phone number you used here, and your tickets will be waiting."))
                 .font(.system(size: 15))
                 .foregroundStyle(ZTheme.secondaryText)
                 .multilineTextAlignment(.center)
@@ -136,7 +136,7 @@ struct ConfirmationView: View {
                     .frame(height: 52)
             }
             .padding(.top, 2)
-            .accessibilityLabel("Download on the App Store")
+            .accessibilityLabel(L("download_badge", "Download on the App Store"))
         }
         .frame(maxWidth: .infinity)
     }

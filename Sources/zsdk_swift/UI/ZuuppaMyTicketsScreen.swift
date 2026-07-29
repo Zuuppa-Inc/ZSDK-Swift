@@ -80,7 +80,7 @@ public struct ZuuppaMyTicketsScreen: View {
                     .foregroundStyle(ZTheme.text)
                     .frame(width: 56, height: 56)
             }
-            .accessibilityLabel("Back")
+            .accessibilityLabel(L("back", "Back"))
             Spacer()
         }
         .padding(.horizontal, 4)

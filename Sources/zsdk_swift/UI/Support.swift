@@ -77,7 +77,7 @@ struct QRCodeView: View {
 /// `TimeService.formatEventDateRangeInTz`:
 /// "Sat, Mar 28 at 7:00 PM - 2:00 AM (PST)".
 func formatEventDateRange(start: Date?, end: Date?, timezone: String?) -> String {
-    guard let start else { return "Date TBD" }
+    guard let start else { return L("date_tbd", "Date TBD") }
     let tz = timezone.flatMap { TimeZone(identifier: $0) } ?? .current
 
     let dayMonth = DateFormatter()

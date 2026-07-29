@@ -41,27 +41,27 @@ public struct ZuuppaMyTicketsConfig: Sendable {
         /// The tab's title in the segmented control.
         var title: String {
             switch self {
-            case .upcoming: return "Upcoming"
-            case .past: return "Past"
-            case .cancelled: return "Cancelled"
+            case .upcoming: return L("tab_upcoming", "Upcoming")
+            case .past: return L("tab_past", "Past")
+            case .cancelled: return L("tab_cancelled", "Cancelled")
             }
         }
 
         /// The empty-state title shown when the tab has no tickets.
         var emptyTitle: String {
             switch self {
-            case .upcoming: return "No upcoming tickets"
-            case .past: return "No past tickets"
-            case .cancelled: return "No cancelled tickets"
+            case .upcoming: return L("no_upcoming", "No upcoming tickets")
+            case .past: return L("no_past", "No past tickets")
+            case .cancelled: return L("no_cancelled", "No cancelled tickets")
             }
         }
 
         /// The empty-state subtitle shown under the title.
         var emptySubtitle: String {
             switch self {
-            case .upcoming: return "RSVP to events and your tickets\nwill appear here"
-            case .past: return "Your past event tickets\nwill appear here"
-            case .cancelled: return "Cancelled event tickets\nwill appear here"
+            case .upcoming: return L("empty_upcoming_sub", "RSVP to events and your tickets\nwill appear here")
+            case .past: return L("empty_past_sub", "Your past event tickets\nwill appear here")
+            case .cancelled: return L("empty_cancelled_sub", "Cancelled event tickets\nwill appear here")
             }
         }
     }

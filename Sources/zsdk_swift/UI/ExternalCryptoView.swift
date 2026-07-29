@@ -37,19 +37,19 @@ struct ExternalCryptoView: View {
             header
             ScrollView {
                 VStack(spacing: 0) {
-                    label(isUnderpaid ? "SEND REMAINING" : "SEND")
+                    label(isUnderpaid ? L("send_remaining", "SEND REMAINING") : L("send", "SEND"))
                     Spacer().frame(height: 10)
                     amount
                     Spacer().frame(height: 36)
                     qrPlate
                     Spacer().frame(height: 24)
-                    label("TO")
+                    label(L("to_label", "TO"))
                     Spacer().frame(height: 8)
                     addressRow
                     Spacer().frame(height: 36)
                     statusBlock
                     Spacer().frame(height: 14)
-                    Text("Keep this screen open — your payment is detected automatically, usually within seconds.")
+                    Text(L("crypto_keep_open", "Keep this screen open — your payment is detected automatically, usually within seconds."))
                         .font(.system(size: 12.5))
                         .foregroundStyle(ZTheme.secondaryText)
                         .multilineTextAlignment(.center)
@@ -57,7 +57,7 @@ struct ExternalCryptoView: View {
 
                     if isTerminalFailure {
                         Spacer().frame(height: 28)
-                        ZButton(label: "Go back") { model.backToCheckout() }
+                        ZButton(label: L("go_back", "Go back")) { model.backToCheckout() }
                     }
                 }
                 .frame(maxWidth: .infinity)
@@ -163,17 +163,17 @@ struct ExternalCryptoView: View {
     private var statusVisual: (color: Color, icon: MIcon, title: String) {
         switch paymentStatus {
         case "paid", "swept", "overpaid":
-            return (ZTheme.green, .checkCircleRounded, "Payment received")
+            return (ZTheme.green, .checkCircleRounded, L("pay_received", "Payment received"))
         case "underpaid":
-            return (ZTheme.pendingStatus, .timelapseRounded, "Partial payment")
+            return (ZTheme.pendingStatus, .timelapseRounded, L("pay_partial", "Partial payment"))
         case "expired":
-            return (ZTheme.red, .timerOffRounded, "Expired")
+            return (ZTheme.red, .timerOffRounded, L("pay_expired", "Expired"))
         case "refunded":
-            return (ZTheme.red, .undoRounded, "Refunded")
+            return (ZTheme.red, .undoRounded, L("pay_refunded", "Refunded"))
         case "refund_failed":
-            return (ZTheme.red, .errorOutlineRounded, "Needs attention")
+            return (ZTheme.red, .errorOutlineRounded, L("pay_attention", "Needs attention"))
         default:
-            return (ZTheme.primary, .hourglassTopRounded, "Waiting for payment")
+            return (ZTheme.primary, .hourglassTopRounded, L("pay_waiting", "Waiting for payment"))
         }
     }
 
@@ -181,7 +181,7 @@ struct ExternalCryptoView: View {
 
     private var header: some View {
         ZStack {
-            Text("Crypto payment")
+            Text(L("crypto_payment", "Crypto payment"))
                 .font(.system(size: 20, weight: .bold))
                 .foregroundStyle(ZTheme.text)
             HStack {
@@ -190,7 +190,7 @@ struct ExternalCryptoView: View {
                         .frame(width: 48, height: 48)
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Back")
+                .accessibilityLabel(L("back", "Back"))
                 Spacer()
             }
         }
@@ -225,7 +225,7 @@ struct ExternalCryptoView: View {
 
                 HStack(spacing: 5) {
                     MaterialIcon(.copyRounded, size: 13, color: ZTheme.primary)
-                    Text("Tap to copy")
+                    Text(L("tap_to_copy", "Tap to copy"))
                         .font(.system(size: 12.5, weight: .semibold))
                         .foregroundStyle(ZTheme.primary)
                 }
@@ -287,7 +287,7 @@ struct ExternalCryptoView: View {
 
     private func copy(_ value: String, _ label: String) {
         UIPasteboard.general.string = value
-        withAnimation { toast = "\(label) copied" }
+        withAnimation { toast = Lf("copied", "%@ copied", label) }
         Task {
             try? await Task.sleep(for: .seconds(2))
             withAnimation { toast = nil }

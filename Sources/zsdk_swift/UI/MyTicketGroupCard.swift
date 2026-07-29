@@ -104,8 +104,7 @@ struct MyTicketGroupCard: View {
     }
 
     private var ticketCountText: String {
-        let count = group.tickets.count
-        return count == 1 ? "1 ticket" : "\(count) tickets"
+        LticketCount(group.tickets.count)
     }
 
     /// Device-local "MMM d, yyyy • h:mm a", matching the app's group card.

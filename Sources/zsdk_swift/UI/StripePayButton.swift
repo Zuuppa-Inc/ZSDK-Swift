@@ -8,7 +8,7 @@ import StripePaymentSheet
 struct StripePayButton: View {
 
     let model: TicketFlowModel
-    var label: String = "Pay with Card"
+    var label: String = L("pay_with_card", "Pay with Card")
     var isEnabled: Bool = true
 
     @State private var isBusy = false

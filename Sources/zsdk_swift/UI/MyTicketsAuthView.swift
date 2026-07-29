@@ -57,7 +57,7 @@ struct MyTicketsAuthView: View {
                         .foregroundStyle(ZTheme.text)
                         .frame(width: 56, height: 56)
                 }
-                .accessibilityLabel("Back")
+                .accessibilityLabel(L("back", "Back"))
                 Spacer()
             }
             .padding(.horizontal, 4)
@@ -74,7 +74,7 @@ struct MyTicketsAuthView: View {
         VStack(alignment: .leading, spacing: 0) {
             Spacer().frame(height: 10)
 
-            Text(otpSent ? "Enter the code" : "Sign in to see your tickets")
+            Text(otpSent ? L("enter_code", "Enter the code") : L("signin_tickets_title", "Sign in to see your tickets"))
                 .font(.system(size: 28, weight: .bold))
                 .foregroundStyle(ZTheme.text)
 
@@ -89,14 +89,14 @@ struct MyTicketsAuthView: View {
 
             if otpSent {
                 labeledField(
-                    label: "Verification Code",
+                    label: L("verification_code", "Verification Code"),
                     text: $code,
                     keyboard: .numberPad,
                     content: .oneTimeCode
                 )
 
                 Spacer().frame(height: 16)
-                Button("Resend code") {
+                Button(L("resend_code", "Resend code")) {
                     Task { await resend() }
                 }
                 .font(.system(size: 14, weight: .semibold))
@@ -104,14 +104,14 @@ struct MyTicketsAuthView: View {
                 .disabled(isBusy)
             } else {
                 labeledField(
-                    label: method == .email ? "Email" : "Phone Number",
+                    label: method == .email ? L("email", "Email") : L("phone_number", "Phone Number"),
                     text: $contact,
                     keyboard: method == .email ? .emailAddress : .phonePad,
                     content: method == .email ? .emailAddress : .telephoneNumber
                 )
 
                 Spacer().frame(height: 16)
-                Button(method == .email ? "Continue with Phone" : "Continue with Email") {
+                Button(method == .email ? L("continue_phone", "Continue with Phone") : L("continue_email", "Continue with Email")) {
                     method = method == .email ? .phone : .email
                     contact = ""
                     errorText = nil
@@ -131,7 +131,7 @@ struct MyTicketsAuthView: View {
             Spacer()
 
             ZButton(
-                label: otpSent ? "Verify" : "Send Code",
+                label: otpSent ? L("verify", "Verify") : L("send_code", "Send Code"),
                 isBusy: isBusy,
                 isEnabled: canSubmit
             ) {
@@ -144,7 +144,7 @@ struct MyTicketsAuthView: View {
     }
 
     private var subtitle: String {
-        "We sent a code to \(method == .email ? contact : normalizedContact)"
+        Lf("we_sent_code", "We sent a code to %@", method == .email ? contact : normalizedContact)
     }
 
     @ViewBuilder
@@ -202,7 +202,7 @@ struct MyTicketsAuthView: View {
             }
         } catch {
             errorText = (error as? ZuuppaError)?.errorDescription
-                ?? (otpSent ? "Verification failed. Try again." : "Failed to send code. Try again.")
+                ?? (otpSent ? L("verify_failed_generic", "Verification failed. Try again.") : L("failed_send_code", "Failed to send code. Try again."))
         }
     }
 
@@ -214,7 +214,7 @@ struct MyTicketsAuthView: View {
             try await model.requestOTP(channel)
             code = ""
         } catch {
-            errorText = (error as? ZuuppaError)?.errorDescription ?? "Failed to resend. Try again."
+            errorText = (error as? ZuuppaError)?.errorDescription ?? L("failed_resend", "Failed to resend. Try again.")
         }
     }
 

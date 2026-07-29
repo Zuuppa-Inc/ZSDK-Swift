@@ -30,7 +30,7 @@ struct MyTicketsListView: View {
     /// Centered "Tickets" title with a back arrow, matching `ZuuppaScreenHeader`.
     private var header: some View {
         ZStack {
-            Text("Tickets")
+            Text(L("tickets_title", "Tickets"))
                 .font(.system(size: 20, weight: .bold))
                 .foregroundStyle(ZTheme.text)
 
@@ -39,7 +39,7 @@ struct MyTicketsListView: View {
                     MaterialIcon(.arrowBack, size: 24, color: ZTheme.text)
                         .frame(width: 48, height: 48)
                 }
-                .accessibilityLabel("Back")
+                .accessibilityLabel(L("back", "Back"))
                 Spacer()
             }
         }
@@ -141,7 +141,7 @@ struct MyTicketsListView: View {
 
             Spacer().frame(height: 20)
 
-            Text(error != nil ? "Couldn't load tickets" : tab.emptyTitle)
+            Text(error != nil ? L("couldnt_load_tickets", "Couldn't load tickets") : tab.emptyTitle)
                 .font(.system(size: 20, weight: .bold))
                 .foregroundStyle(ZTheme.text)
                 .multilineTextAlignment(.center)
@@ -155,7 +155,7 @@ struct MyTicketsListView: View {
 
             if error != nil {
                 Spacer().frame(height: 16)
-                Button("Try again") {
+                Button(L("try_again", "Try again")) {
                     Task { await model.load(tab) }
                 }
                 .font(.system(size: 14, weight: .semibold))

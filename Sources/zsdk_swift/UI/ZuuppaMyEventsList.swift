@@ -104,12 +104,12 @@ public struct ZuuppaMyEventsList: View {
 
     private var emptyState: some View {
         VStack(spacing: 8) {
-            Text(model.loadError ?? "No events")
+            Text(model.loadError ?? L("no_events", "No events"))
                 .font(.system(size: 15))
                 .foregroundStyle(ZTheme.secondaryText)
                 .multilineTextAlignment(.center)
             if model.loadError != nil {
-                Button("Try again") { Task { await model.load() } }
+                Button(L("try_again", "Try again")) { Task { await model.load() } }
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(ZTheme.primary)
             }
@@ -151,7 +151,7 @@ extension String: @retroactive Identifiable {
 /// search field wiring.
 private struct LiveMyEventsPreview: View {
     // Paste a real host user id here to have it pre-filled.
-    @State private var userId = ""
+    @State private var userId = "d5f37982-01f2-4a71-b3ce-e0054bb16b75"
     @State private var submittedUserId: String?
     @State private var query = ""
 

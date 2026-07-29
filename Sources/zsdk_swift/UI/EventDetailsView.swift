@@ -30,7 +30,7 @@ struct EventDetailsView: View {
 
                             if let description = event.description, !description.isEmpty {
                                 Spacer().frame(height: 24)
-                                section("DETAILS")
+                                section(L("details", "DETAILS"))
                                 Spacer().frame(height: 8)
                                 Text(description)
                                     .font(.system(size: 15))
@@ -43,7 +43,7 @@ struct EventDetailsView: View {
 
                             if let location = locationSectionText(event) {
                                 Spacer().frame(height: 24)
-                                section("LOCATION")
+                                section(L("location", "LOCATION"))
                                 Spacer().frame(height: 8)
                                 Text(location)
                                     .font(.system(size: 17, weight: .bold))
@@ -85,13 +85,13 @@ struct EventDetailsView: View {
                     .frame(width: 56, height: 56)
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Back")
+            .accessibilityLabel(L("back", "Back"))
             Spacer()
             ShareLink(item: shareURL) {
                 ShareIcon(size: 20, color: ZTheme.text)
                     .frame(width: 48, height: 48)
             }
-            .accessibilityLabel("Share")
+            .accessibilityLabel(L("share", "Share"))
         }
         .padding(.horizontal, 4)
         .frame(height: 56)   // kToolbarHeight
@@ -169,7 +169,7 @@ struct EventDetailsView: View {
 
             if !event.hosts.isEmpty {
                 Spacer().frame(height: 10)
-                Text("HOSTED BY")
+                Text(L("hosted_by", "HOSTED BY"))
                     .font(.system(size: 11, weight: .semibold))
                     .tracking(0.5)
                     .foregroundStyle(ZTheme.text.opacity(0.7))
@@ -229,14 +229,14 @@ struct EventDetailsView: View {
 
     @ViewBuilder
     private func ticketsSection(_ event: Event) -> some View {
-        section("TICKETS")
+        section(L("tickets_section", "TICKETS"))
         Spacer().frame(height: 8)
 
         if !event.isPaid {
             infoCard {
                 HStack(spacing: 12) {
                     MaterialIcon(.confirmationNumOutlined, size: 20, color: ZTheme.text)
-                    Text("FREE RSVP")
+                    Text(L("free_rsvp", "FREE RSVP"))
                         .font(.system(size: 15, weight: .medium))
                         .foregroundStyle(ZTheme.text)
                     Spacer()

@@ -5,6 +5,9 @@ import PackageDescription
 
 let package = Package(
     name: "zsdk_swift",
+    // Enables localization: SwiftPM picks up the `<lang>.lproj` folders under
+    // the target and generates the resource bundle's Info.plist localizations.
+    defaultLocalization: "en",
     platforms: [
         .iOS(.v17)
     ],
@@ -28,11 +31,11 @@ let package = Package(
                 .product(name: "StripePaymentSheet", package: "stripe-ios"),
             ],
             resources: [
-                // Bundle the Material Icons font (Apache-2.0 / CC-BY) so the SDK
-                // renders the exact same glyphs the Zuuppa app uses.
-                .process("Resources/Fonts"),
-                // Zuuppa wordmark shown on the confirmation screen.
-                .process("Resources/Images"),
+                // Processes everything under Resources:
+                //  • Fonts/  — Material Icons (Apache-2.0 / CC-BY), same glyphs as the app
+                //  • Images/ — Zuuppa wordmark + App Store badge
+                //  • <lang>.lproj/ — localized strings for the 7 supported languages
+                .process("Resources"),
             ]
         ),
 

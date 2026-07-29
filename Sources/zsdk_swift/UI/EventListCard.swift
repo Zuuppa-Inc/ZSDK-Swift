@@ -11,7 +11,7 @@ struct EventListCard: View {
             cover
 
             VStack(alignment: .leading, spacing: 0) {
-                Text(event.name.isEmpty ? "Untitled Event" : event.name)
+                Text(event.name.isEmpty ? L("untitled_event", "Untitled Event") : event.name)
                     .font(.system(size: 16, weight: .bold))
                     .foregroundStyle(ZTheme.text)
                     .lineLimit(1)

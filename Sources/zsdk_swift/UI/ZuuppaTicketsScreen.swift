@@ -113,7 +113,7 @@ public struct ZuuppaTicketsScreen: View {
                     .foregroundStyle(ZTheme.text)
                     .frame(width: 56, height: 56)
             }
-            .accessibilityLabel("Back")
+            .accessibilityLabel(L("back", "Back"))
             Spacer()
         }
         .padding(.horizontal, 4)
@@ -125,7 +125,7 @@ public struct ZuuppaTicketsScreen: View {
                 Image(systemName: "exclamationmark.triangle")
                     .font(.system(size: 44))
                     .foregroundStyle(ZTheme.orange)
-                Text("Something went wrong")
+                Text(L("something_wrong", "Something went wrong"))
                     .font(.system(size: 18, weight: .bold))
                     .foregroundStyle(ZTheme.text)
                 Text(message)
@@ -156,7 +156,7 @@ public struct ZuuppaTicketsScreen: View {
                     .foregroundStyle(ZTheme.text)
                     .frame(width: 56, height: 56)
             }
-            .accessibilityLabel("Back")
+            .accessibilityLabel(L("back", "Back"))
 
             Spacer()
 
@@ -166,7 +166,7 @@ public struct ZuuppaTicketsScreen: View {
                     .foregroundStyle(ZTheme.text)
                     .frame(width: 56, height: 56)
             }
-            .accessibilityLabel("Close")
+            .accessibilityLabel(L("close", "Close"))
         }
         .padding(.horizontal, 4)
     }

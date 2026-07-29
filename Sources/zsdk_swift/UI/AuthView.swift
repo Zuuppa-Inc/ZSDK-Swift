@@ -87,7 +87,7 @@ struct AuthView: View {
                         .foregroundStyle(ZTheme.text)
                         .frame(width: 56, height: 56)
                 }
-                .accessibilityLabel("Back")
+                .accessibilityLabel(L("back", "Back"))
                 Spacer()
             }
             .padding(.horizontal, 4)
@@ -127,7 +127,7 @@ struct AuthView: View {
         VStack(alignment: .leading, spacing: 0) {
             Spacer().frame(height: 10)
 
-            Text(otpSent ? "Enter the code" : "Sign in or create an account")
+            Text(otpSent ? L("enter_code", "Enter the code") : L("signin_title", "Sign in or create an account"))
                 .font(.system(size: 28, weight: .bold))
                 .foregroundStyle(ZTheme.text)
 
@@ -142,14 +142,14 @@ struct AuthView: View {
 
             if otpSent {
                 labeledField(
-                    label: "Verification Code",
+                    label: L("verification_code", "Verification Code"),
                     text: $code,
                     keyboard: .numberPad,
                     content: .oneTimeCode
                 )
 
                 Spacer().frame(height: 16)
-                Button("Resend code") {
+                Button(L("resend_code", "Resend code")) {
                     Task { await resend() }
                 }
                 .font(.system(size: 14, weight: .semibold))
@@ -157,14 +157,14 @@ struct AuthView: View {
                 .disabled(isBusy)
             } else {
                 labeledField(
-                    label: method == .email ? "Email" : "Phone Number",
+                    label: method == .email ? L("email", "Email") : L("phone_number", "Phone Number"),
                     text: $contact,
                     keyboard: method == .email ? .emailAddress : .phonePad,
                     content: method == .email ? .emailAddress : .telephoneNumber
                 )
 
                 Spacer().frame(height: 16)
-                Button(method == .email ? "Continue with Phone" : "Continue with Email") {
+                Button(method == .email ? L("continue_phone", "Continue with Phone") : L("continue_email", "Continue with Email")) {
                     method = method == .email ? .phone : .email
                     contact = ""
                     errorText = nil
@@ -186,7 +186,7 @@ struct AuthView: View {
             Spacer()
 
             ZButton(
-                label: otpSent ? "Verify" : "Send Code",
+                label: otpSent ? L("verify", "Verify") : L("send_code", "Send Code"),
                 isBusy: isBusy,
                 isEnabled: canSubmit
             ) {
@@ -200,7 +200,7 @@ struct AuthView: View {
     }
 
     private var subtitle: String {
-        "We sent a code to \(method == .email ? contact : normalizedContact)"
+        Lf("we_sent_code", "We sent a code to %@", method == .email ? contact : normalizedContact)
     }
 
     // MARK: - Signed-in confirmation
@@ -211,13 +211,13 @@ struct AuthView: View {
         VStack(alignment: .leading, spacing: 0) {
             Spacer().frame(height: 10)
 
-            Text("You're signed in")
+            Text(L("signed_in_title", "You're signed in"))
                 .font(.system(size: 28, weight: .bold))
                 .foregroundStyle(ZTheme.text)
 
             Spacer().frame(height: 4)
 
-            Text("Your tickets will be tied to this account. Continue, or switch to a different one.")
+            Text(L("signed_in_sub", "Your tickets will be tied to this account. Continue, or switch to a different one."))
                 .font(.system(size: ZTheme.fontSize))
                 .foregroundStyle(ZTheme.secondaryText)
 
@@ -229,7 +229,7 @@ struct AuthView: View {
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(ZTheme.primary)
                     .frame(width: 24)
-                Text(identity?.displayName ?? "your account")
+                Text(identity?.displayName ?? L("your_account", "your account"))
                     .font(.system(size: ZTheme.fontSize, weight: .semibold))
                     .foregroundStyle(ZTheme.text)
                     .lineLimit(1)
@@ -249,13 +249,13 @@ struct AuthView: View {
 
             Spacer()
 
-            ZButton(label: "Continue", isBusy: isBusy) {
+            ZButton(label: L("continue_", "Continue"), isBusy: isBusy) {
                 Task { await continueSignedIn() }
             }
 
             Spacer().frame(height: 10)
 
-            ZButton(label: "Use a different account", variant: .bare, foregroundColor: ZTheme.primary) {
+            ZButton(label: L("use_diff_account", "Use a different account"), variant: .bare, foregroundColor: ZTheme.primary) {
                 Task { await switchAccount() }
             }
 
@@ -348,7 +348,7 @@ struct AuthView: View {
             }
         } catch {
             errorText = (error as? ZuuppaError)?.errorDescription
-                ?? (otpSent ? "Verification failed. Try again." : "Failed to send code. Try again.")
+                ?? (otpSent ? L("verify_failed_generic", "Verification failed. Try again.") : L("failed_send_code", "Failed to send code. Try again."))
         }
     }
 
@@ -360,7 +360,7 @@ struct AuthView: View {
             try await model.requestOTP(channel)
             code = ""
         } catch {
-            errorText = (error as? ZuuppaError)?.errorDescription ?? "Failed to resend. Try again."
+            errorText = (error as? ZuuppaError)?.errorDescription ?? L("failed_resend", "Failed to resend. Try again.")
         }
     }
 

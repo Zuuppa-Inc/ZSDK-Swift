@@ -11,15 +11,15 @@ public enum ZuuppaError: LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .network:
-            return "Network connection failed. Check your internet and try again."
+            return L("err_network", "Network connection failed. Check your internet and try again.")
         case .server(_, let message):
-            return message ?? "The server returned an error. Please try again."
+            return message ?? L("err_server", "The server returned an error. Please try again.")
         case .decoding:
-            return "Received an unexpected response from the server."
+            return L("err_decoding", "Received an unexpected response from the server.")
         case .notAuthenticated:
-            return "You need to be signed in to continue."
+            return L("err_not_auth", "You need to be signed in to continue.")
         case .unknown:
-            return "Something went wrong. Please try again."
+            return L("err_unknown", "Something went wrong. Please try again.")
         }
     }
 }
@@ -39,7 +39,7 @@ public struct AuthIdentity: Sendable, Equatable {
     public let phone: String?
 
     /// A human-readable label for the account (email preferred, else phone).
-    public var displayName: String { email ?? phone ?? "your account" }
+    public var displayName: String { email ?? phone ?? L("your_account", "your account") }
 }
 
 /// Minimal Supabase auth client covering exactly what the SDK needs: request an
