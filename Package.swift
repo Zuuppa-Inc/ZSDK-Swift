@@ -38,6 +38,9 @@ let package = Package(
                 .process("Resources"),
             ]
         ),
-
+        .testTarget(
+            name: "zsdk_swiftTests",
+            dependencies: ["zsdk_swift"]
+        ),
     ]
 )
