@@ -81,6 +81,11 @@ final class TicketFlowModel {
     /// Seeded from the event's `viewer_request` on load.
     private(set) var joinRequestStatus: String?
 
+    /// The signed-in viewer's existing RSVP status (`completed` once they've
+    /// RSVP'd), or nil if they haven't. Seeded from the event's `viewer_rsvp` on
+    /// load and updated after a successful RSVP, so the CTA can show "RSVP'd".
+    private(set) var rsvpStatus: String?
+
     // Pricing state, loaded from /config/fees and /events/:id/price-quote.
     private(set) var platformFeeBps: Int = 600
     private(set) var priceToken: String = "SOL"
@@ -129,6 +134,7 @@ final class TicketFlowModel {
             let event = try await api.fetchEvent(id: eventID)
             self.event = event
             joinRequestStatus = event.viewerRequest?.status
+            rsvpStatus = event.viewerRsvp?.status
             priceToken = event.paymentTokenOrDefault
             step = .eventDetails
             // Fees + price quote are public, so load them now; the checkout
@@ -271,6 +277,8 @@ final class TicketFlowModel {
                 result = try await api.freeCheckout(eventID: eventID, items: selectedItems)
             }
             let requested = isFreeEvent ? rsvpQuantity : totalTicketCount
+            // Record the RSVP so returning to the details screen shows "RSVP'd".
+            if isFreeEvent { rsvpStatus = result.status ?? "completed" }
             step = .confirmation(.init(
                 ticketCount: result.ticketCount ?? requested,
                 isPending: (result.status ?? "completed") != "completed"

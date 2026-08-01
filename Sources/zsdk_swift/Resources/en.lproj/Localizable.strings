@@ -2,6 +2,8 @@
 
 "add_apple_wallet" = "Add to Apple Wallet";
 "add_calendar" = "Add to Calendar";
+"approved_buy_ticket" = "Approved — Buy Ticket";
+"awaiting_approval" = "Awaiting Approval";
 "back" = "Back";
 "cancel" = "Cancel";
 "close" = "Close";
@@ -46,8 +48,12 @@
 "no_past" = "No past tickets";
 "no_receipt" = "No receipt is available for this order.";
 "no_upcoming" = "No upcoming tickets";
+"nothing_pending" = "Nothing pending";
 "open_maps" = "Open in Maps";
 "order_n" = "Order %1$@ – %2$@";
+"pending_approval_completion_one" = "%d pending approval / completion";
+"pending_approval_completion_other" = "%d pending approvals / completions";
+"pending_title" = "Pending";
 "pay_attention" = "Needs attention";
 "pay_expired" = "Expired";
 "pay_partial" = "Partial payment";

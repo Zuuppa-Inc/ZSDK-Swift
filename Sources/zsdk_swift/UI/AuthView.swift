@@ -82,11 +82,11 @@ struct AuthView: View {
                 Button {
                     model.backToEventDetails()
                 } label: {
-                    Image(systemName: "arrow.left")
-                        .font(.system(size: 22, weight: .semibold))
-                        .foregroundStyle(ZTheme.text)
+                    MaterialIcon(.arrowBack, size: 24, color: ZTheme.text)
                         .frame(width: 56, height: 56)
+                        .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
                 .accessibilityLabel(L("back", "Back"))
                 Spacer()
             }

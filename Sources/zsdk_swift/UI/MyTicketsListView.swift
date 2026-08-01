@@ -10,6 +10,9 @@ struct MyTicketsListView: View {
 
     private let side = ZTheme.sideMargin
 
+    /// Drives the push to the pending-requests screen from the banner.
+    @State private var showPending = false
+
     private var tabs: [ZuuppaMyTicketsConfig.Tab] { model.options.tabs }
 
     var body: some View {
@@ -17,12 +20,54 @@ struct MyTicketsListView: View {
             header
             // The app always shows the sub-tab row (with its own bottom divider).
             tabBar
+            // Pending banner: only on the Upcoming tab, only when there's at
+            // least one pending / approved-unpurchased request (matches the app).
+            if model.selectedTab == .upcoming && !model.pendingRequests.isEmpty {
+                pendingBanner
+            }
             content
         }
         .background(ZTheme.background)
         .navigationDestination(for: MyTicketGroup.self) { group in
             MyTicketDetailView(group: group, model: model)
         }
+        .navigationDestination(isPresented: $showPending) {
+            PendingRequestsView(model: model) { showPending = false }
+        }
+    }
+
+    // MARK: - Pending banner
+
+    /// Port of the app's `_buildPendingBanner`: an orange-tinted pill with an
+    /// hourglass icon, "N pending approval(s) / completion(s)", and a chevron.
+    private var pendingBanner: some View {
+        Button {
+            showPending = true
+        } label: {
+            HStack(spacing: 10) {
+                MaterialIcon(.hourglassTopRounded, size: 20, color: ZTheme.orange)
+                Text(pendingBannerText)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(ZTheme.text)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                MaterialIcon(.chevronRight, size: 20, color: ZTheme.secondaryText)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .background(ZTheme.orange.opacity(0.12), in: .rect(cornerRadius: 10))
+            .padding(.horizontal, side)
+            .padding(.top, 8)
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// "N pending approval / completion" (singular) or "…approvals / completions"
+    /// (plural), matching the app's `pendingApprovalCompletion`.
+    private var pendingBannerText: String {
+        let count = model.pendingRequests.count
+        return count == 1
+            ? Lf("pending_approval_completion_one", "%d pending approval / completion", count)
+            : Lf("pending_approval_completion_other", "%d pending approvals / completions", count)
     }
 
     // MARK: - Header
@@ -178,6 +223,13 @@ struct MyTicketsListView: View {
 #Preview("My Tickets — empty") {
     NavigationStack {
         MyTicketsListView(model: .preview(empty: true), onBack: {})
+    }
+    .preferredColorScheme(.dark)
+}
+
+#Preview("My Tickets — pending banner") {
+    NavigationStack {
+        MyTicketsListView(model: .preview(pending: true), onBack: {})
     }
     .preferredColorScheme(.dark)
 }

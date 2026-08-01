@@ -37,6 +37,11 @@ final class MyTicketsModel {
     private(set) var authState: AuthState = .checking
     private(set) var states: [ZuuppaMyTicketsConfig.Tab: TabState] = [:]
 
+    /// The user's pending / approved-unpurchased join requests, backing the
+    /// "N pending approvals" banner and the pending-requests screen. Mirrors the
+    /// app's `_pendingCount` + `PendingCompletionsScreen`.
+    private(set) var pendingRequests: [PendingJoinRequest] = []
+
     /// The tab currently on screen. Starts on the first configured tab.
     var selectedTab: ZuuppaMyTicketsConfig.Tab
 
@@ -58,6 +63,7 @@ final class MyTicketsModel {
         authState = (identity != nil) ? .ready : .signedOut
         if authState == .ready {
             await loadAllTabs()
+            await loadPendingRequests()
         }
     }
 
@@ -65,6 +71,7 @@ final class MyTicketsModel {
     func onAuthenticated() async {
         authState = .ready
         await loadAllTabs()
+        await loadPendingRequests()
     }
 
     /// Loads every configured tab concurrently (like the app firing all its
@@ -112,6 +119,8 @@ final class MyTicketsModel {
         state.didLoadOnce = false   // let `load` show a fresh state if empty
         states[tab] = state
         await load(tab)
+        // The app's `_refreshAttending` also refreshes the pending banner count.
+        await loadPendingRequests()
     }
 
     /// Loads the next page of a tab, appending to the existing list. No-op when
@@ -137,6 +146,15 @@ final class MyTicketsModel {
             var updated = states[tab] ?? TabState()
             updated.isLoadingMore = false
             states[tab] = updated
+        }
+    }
+
+    /// (Re)loads the pending-requests banner count + list. Called on start, and
+    /// on pull-to-refresh / after returning from the pending screen (mirroring
+    /// the app's `_loadPendingCount`). A failure just leaves the prior list.
+    func loadPendingRequests() async {
+        if let items = try? await api.fetchMyPendingRequests() {
+            pendingRequests = items
         }
     }
 
@@ -191,6 +209,7 @@ extension MyTicketsModel {
     static func preview(
         signedOut: Bool = false,
         empty: Bool = false,
+        pending: Bool = false,
         options: ZuuppaMyTicketsConfig = .default
     ) -> MyTicketsModel {
         let model = MyTicketsModel(config: .default, options: options)
@@ -207,8 +226,49 @@ extension MyTicketsModel {
             state.didLoadOnce = true
             model.states[tab] = state
         }
+        if pending { model.pendingRequests = PendingJoinRequest.previewSamples }
         return model
     }
+}
+
+extension PendingJoinRequest {
+    /// Sample pending requests for previews: one awaiting approval, one approved
+    /// paid event to buy tickets for.
+    static let previewSamples: [PendingJoinRequest] = {
+        let json = """
+        [
+            {
+                "event_id": "evt-3",
+                "event_name": "Underground Warehouse Rave",
+                "request_status": "pending",
+                "cover_image_url": null,
+                "venue_name": "Secret Location",
+                "address_text": "Brooklyn, NY",
+                "start_at": "2026-08-22T22:00:00Z",
+                "end_at": "2026-08-23T04:00:00Z",
+                "timezone": "America/New_York",
+                "is_paid": false,
+                "accent_color": "#9B59B6"
+            },
+            {
+                "event_id": "evt-4",
+                "event_name": "Members-Only Wine Tasting",
+                "request_status": "approved",
+                "cover_image_url": null,
+                "venue_name": "The Cellar",
+                "address_text": "88 Vine St, Napa, CA",
+                "start_at": "2026-09-05T18:00:00Z",
+                "end_at": null,
+                "timezone": "America/Los_Angeles",
+                "is_paid": true,
+                "accent_color": "#C0392B"
+            }
+        ]
+        """
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return (try? decoder.decode([PendingJoinRequest].self, from: Data(json.utf8))) ?? []
+    }()
 }
 
 extension MyTicket {

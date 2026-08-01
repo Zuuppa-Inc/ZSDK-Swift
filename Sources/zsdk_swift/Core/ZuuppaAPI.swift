@@ -87,6 +87,14 @@ actor ZuuppaAPI {
         try await post("/events/\(eventID)/request-join", body: EmptyBody(), as: ViewerRequest.self)
     }
 
+    /// The signed-in user's pending / approved-unpurchased join requests — the
+    /// events awaiting host approval, plus approved paid events they haven't
+    /// bought tickets for. Returns a bare JSON array. Matches the app's
+    /// `fetchMyPendingRequests`.
+    func fetchMyPendingRequests() async throws -> [PendingJoinRequest] {
+        try await get("/join-requests/me", as: [PendingJoinRequest].self)
+    }
+
     // MARK: - My Tickets
 
     /// The signed-in buyer's tickets for one filter tab (upcoming / past /

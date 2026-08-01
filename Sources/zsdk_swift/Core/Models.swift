@@ -66,6 +66,9 @@ public struct Event: Decodable, Sendable {
     public let settings: EventSettings?
     /// The signed-in viewer's join-request, when they've made one.
     public let viewerRequest: ViewerRequest?
+    /// The signed-in viewer's existing RSVP on this event, when they have one.
+    /// Its `status` is `completed` once they've RSVP'd.
+    public let viewerRsvp: ViewerRequest?
 
     enum CodingKeys: String, CodingKey {
         case id, name, description, status, timezone, latitude, longitude, host, cohost, settings
@@ -82,6 +85,7 @@ public struct Event: Decodable, Sendable {
         case maxTicketsPerOrder = "max_tickets_per_order"
         case ticketTypes = "ticket_types"
         case viewerRequest = "viewer_request"
+        case viewerRsvp = "viewer_rsvp"
     }
 
     /// Ticket types worth showing (active, sorted).
@@ -235,6 +239,47 @@ struct ReceiptResponse: Decodable {
     var url: URL? {
         (explorerURL ?? receiptURL).flatMap(URL.init(string:))
     }
+}
+
+// MARK: - Pending join requests
+
+/// One of the signed-in user's pending / approved-unpurchased join requests, as
+/// returned by `GET /join-requests/me`. Mirrors the app's attendee-side
+/// `PendingCompletionsScreen` items: events awaiting host approval, plus
+/// approved paid events the user hasn't bought tickets for yet.
+public struct PendingJoinRequest: Identifiable, Decodable, Sendable, Hashable {
+    /// The event id doubles as identity (one request per event per user).
+    public var id: String { eventID }
+
+    public let eventID: String
+    public let eventName: String?
+    /// `pending` (awaiting approval) or `approved` (approved, buy ticket).
+    public let requestStatus: String
+    public let coverImageURL: String?
+    public let venueName: String?
+    public let addressText: String?
+    public let startAt: Date?
+    public let endAt: Date?
+    public let timezone: String?
+    public let isPaid: Bool
+    public let accentColor: String?
+
+    enum CodingKeys: String, CodingKey {
+        case timezone
+        case eventID = "event_id"
+        case eventName = "event_name"
+        case requestStatus = "request_status"
+        case coverImageURL = "cover_image_url"
+        case venueName = "venue_name"
+        case addressText = "address_text"
+        case startAt = "start_at"
+        case endAt = "end_at"
+        case isPaid = "is_paid"
+        case accentColor = "accent_color"
+    }
+
+    /// Whether the request is still awaiting host approval.
+    public var isPending: Bool { requestStatus == "pending" }
 }
 
 // MARK: - My Events

@@ -79,10 +79,9 @@ struct EventDetailsView: View {
     private func header(_ event: Event) -> some View {
         HStack {
             Button(action: onBack) {
-                Image(systemName: "arrow.left")
-                    .font(.system(size: 22, weight: .semibold))
-                    .foregroundStyle(ZTheme.text)
+                MaterialIcon(.arrowBack, size: 24, color: ZTheme.text)
                     .frame(width: 56, height: 56)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .accessibilityLabel(L("back", "Back"))
@@ -288,26 +287,21 @@ struct EventDetailsView: View {
     // MARK: - CTA
 
     private func ctaBar(_ event: Event) -> some View {
-        // Mirror the app's RSVP bar: approval-gated events surface a request
-        // flow and never let an unapproved viewer reach checkout/RSVP.
-        let status = model.joinRequestStatus
-        let isRequested = status == "pending"
-        let isDeclined = status == "declined"
-        let needsRequest = event.requiresApproval && status != "approved"
-        // Disable while requested/declined (no-op like the app's disabled bar).
-        let enabled = !(isRequested || isDeclined)
+        // Mirror the app's `_buildRsvpBar` exactly. The button is ALWAYS solid
+        // (accent-filled) — the "disabled" states (Requested / Declined /
+        // RSVP'd) just get a no-op action, they aren't greyed out.
+        let cta = ctaState(event)
 
         return VStack(spacing: 0) {
             ZButton(
-                label: approvalLabel(event, status: status) ?? ctaLabel(event),
+                label: cta.label,
                 backgroundColor: ZTheme.primary,
-                foregroundColor: ZTheme.onPrimary,
-                isEnabled: enabled
+                foregroundColor: ZTheme.onPrimary
             ) {
-                if needsRequest {
-                    Task { await model.requestToJoin() }
-                } else {
-                    Task { await model.showTicketSelection() }
+                switch cta.action {
+                case .none: break
+                case .requestToJoin: Task { await model.requestToJoin() }
+                case .selectTickets: Task { await model.showTicketSelection() }
                 }
             }
             .padding(.horizontal, side)
@@ -316,17 +310,30 @@ struct EventDetailsView: View {
         .background(.clear)
     }
 
-    /// The CTA label when approval gating overrides the normal RSVP/Buy label:
-    /// "Requested" (pending), "Request Declined" (declined), or "Request to
-    /// Join" (approval required, not yet requested). Nil when the normal label
-    /// applies. Matches the app's `_buildRsvpBar`.
-    private func approvalLabel(_ event: Event, status: String?) -> String? {
-        if status == "pending" { return L("requested", "Requested") }
-        if status == "declined" { return L("request_declined", "Request Declined") }
-        if event.requiresApproval && status != "approved" {
-            return L("request_to_join", "Request to Join")
+    /// What the CTA does when tapped.
+    private enum CTAAction { case none, requestToJoin, selectTickets }
+
+    /// The CTA's label + action, resolved with the SAME precedence as the app's
+    /// `_buildRsvpBar`: join-request states first, then approval gating, then
+    /// paid vs. an already-completed free RSVP, then a fresh RSVP.
+    private func ctaState(_ event: Event) -> (label: String, action: CTAAction) {
+        let requestStatus = model.joinRequestStatus
+        if requestStatus == "pending" {
+            return (L("requested", "Requested"), .none)
         }
-        return nil
+        if requestStatus == "declined" {
+            return (L("request_declined", "Request Declined"), .none)
+        }
+        if event.requiresApproval && requestStatus != "approved" {
+            return (L("request_to_join", "Request to Join"), .requestToJoin)
+        }
+        if event.isPaid {
+            return (ctaLabel(event), .selectTickets)
+        }
+        if model.rsvpStatus == "completed" {
+            return (L("rsvped", "RSVP'd"), .none)
+        }
+        return (ctaLabel(event), .selectTickets)
     }
 
     // MARK: - Helpers
