@@ -111,20 +111,11 @@ struct EventDetailsView: View {
         // ratio (fit: cover, no fixed height); 16:9 is only the placeholder.
         Group {
             if let urlString = event.coverImageURL, let url = URL(string: urlString) {
-                AsyncImage(url: url) { phase in
-                    switch phase {
-                    case .success(let image):
-                        // Full width, natural aspect ratio (no crop).
-                        image
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(maxWidth: .infinity)
-                    case .empty:
-                        placeholderCover.aspectRatio(16.0 / 9.0, contentMode: .fit)
-                    default:
-                        placeholderCover.aspectRatio(16.0 / 9.0, contentMode: .fit)
-                    }
+                // Full width, natural aspect ratio (no crop).
+                AnimatedImageView(url: url, contentMode: .fit) {
+                    placeholderCover.aspectRatio(16.0 / 9.0, contentMode: .fit)
                 }
+                .frame(maxWidth: .infinity)
             } else {
                 placeholderCover.aspectRatio(16.0 / 9.0, contentMode: .fit)
             }
@@ -196,11 +187,8 @@ struct EventDetailsView: View {
         let size: CGFloat = 38
         Group {
             if let urlString = host.profilePhotoURL, let url = URL(string: urlString) {
-                AsyncImage(url: url) { phase in
-                    switch phase {
-                    case .success(let image): image.resizable().scaledToFill()
-                    default: avatarPlaceholder
-                    }
+                AnimatedImageView(url: url, contentMode: .fill) {
+                    avatarPlaceholder
                 }
             } else {
                 avatarPlaceholder
@@ -300,18 +288,45 @@ struct EventDetailsView: View {
     // MARK: - CTA
 
     private func ctaBar(_ event: Event) -> some View {
-        VStack(spacing: 0) {
+        // Mirror the app's RSVP bar: approval-gated events surface a request
+        // flow and never let an unapproved viewer reach checkout/RSVP.
+        let status = model.joinRequestStatus
+        let isRequested = status == "pending"
+        let isDeclined = status == "declined"
+        let needsRequest = event.requiresApproval && status != "approved"
+        // Disable while requested/declined (no-op like the app's disabled bar).
+        let enabled = !(isRequested || isDeclined)
+
+        return VStack(spacing: 0) {
             ZButton(
-                label: ctaLabel(event),
+                label: approvalLabel(event, status: status) ?? ctaLabel(event),
                 backgroundColor: ZTheme.primary,
-                foregroundColor: ZTheme.onPrimary
+                foregroundColor: ZTheme.onPrimary,
+                isEnabled: enabled
             ) {
-                Task { await model.showTicketSelection() }
+                if needsRequest {
+                    Task { await model.requestToJoin() }
+                } else {
+                    Task { await model.showTicketSelection() }
+                }
             }
             .padding(.horizontal, side)
             .padding(.top, 12)
         }
         .background(.clear)
+    }
+
+    /// The CTA label when approval gating overrides the normal RSVP/Buy label:
+    /// "Requested" (pending), "Request Declined" (declined), or "Request to
+    /// Join" (approval required, not yet requested). Nil when the normal label
+    /// applies. Matches the app's `_buildRsvpBar`.
+    private func approvalLabel(_ event: Event, status: String?) -> String? {
+        if status == "pending" { return L("requested", "Requested") }
+        if status == "declined" { return L("request_declined", "Request Declined") }
+        if event.requiresApproval && status != "approved" {
+            return L("request_to_join", "Request to Join")
+        }
+        return nil
     }
 
     // MARK: - Helpers

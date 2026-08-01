@@ -20,8 +20,14 @@ struct TicketSelectionView: View {
                         Spacer().frame(height: 24)
 
                         VStack(spacing: 5) {
-                            ForEach(event.sellableTicketTypes) { tt in
-                                ticketRow(tt, isPaid: event.isPaid)
+                            if event.isPaid {
+                                ForEach(event.sellableTicketTypes) { tt in
+                                    ticketRow(tt, isPaid: event.isPaid)
+                                }
+                            } else {
+                                // Free events ignore ticket types entirely and show a
+                                // single RSVP card seeded to 1, matching the app.
+                                freeRsvpRow(event)
                             }
                         }
                     }
@@ -75,6 +81,42 @@ struct TicketSelectionView: View {
             }
             Spacer()
             stepper(tt, quantity: quantity)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(ZTheme.cardOverlay, in: RoundedRectangle(cornerRadius: 10))
+    }
+
+    /// The single "RSVP / Free" card shown for free events. Bound to
+    /// `model.rsvpQuantity` (floored at 1), ignoring ticket types like the app.
+    private func freeRsvpRow(_ event: Event) -> some View {
+        let quantity = model.rsvpQuantity
+        let maxAllowed = event.maxTicketsPerOrder ?? 10
+        return HStack(spacing: 0) {
+            VStack(alignment: .leading, spacing: 0) {
+                Text(L("rsvp", "RSVP"))
+                    .font(.system(size: 16, weight: .black))
+                    .tracking(0.2)
+                    .foregroundStyle(ZTheme.text)
+                Text(L("free", "Free"))
+                    .font(.system(size: 14))
+                    .foregroundStyle(ZTheme.secondaryText)
+            }
+            Spacer()
+            // Floor of 1 (decrement disabled at 1), capped by max per order.
+            HStack(spacing: 0) {
+                stepButton(.remove, enabled: quantity > 1) {
+                    model.rsvpQuantity = max(1, quantity - 1)
+                }
+                Text("\(quantity)")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundStyle(ZTheme.text)
+                    .frame(minWidth: 20)
+                    .padding(.horizontal, 12)
+                stepButton(.add, enabled: quantity < maxAllowed) {
+                    model.rsvpQuantity = min(maxAllowed, quantity + 1)
+                }
+            }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)

@@ -34,6 +34,14 @@ final class TicketFlowModel {
 
     /// Data shown on the success screen.
     struct Confirmation {
+        /// Which success screen to show: a ticket purchase/RSVP confirmation, or
+        /// the "request sent" screen after an approval-gated join request.
+        enum Kind {
+            case tickets
+            case requestSent
+        }
+
+        var kind: Kind = .tickets
         let ticketCount: Int
         let isPending: Bool
     }
@@ -63,6 +71,16 @@ final class TicketFlowModel {
     /// Buyer's selected quantity per ticket-type id.
     var quantities: [String: Int] = [:]
 
+    /// Selected quantity for a FREE event's single RSVP card. Free RSVP ignores
+    /// ticket types entirely (matching the app), so this is a standalone count
+    /// seeded to 1 and floored at 1.
+    var rsvpQuantity: Int = 1
+
+    /// The signed-in viewer's join-request status for an approval-gated event
+    /// (`pending` / `approved` / `declined`), or nil if they haven't requested.
+    /// Seeded from the event's `viewer_request` on load.
+    private(set) var joinRequestStatus: String?
+
     // Pricing state, loaded from /config/fees and /events/:id/price-quote.
     private(set) var platformFeeBps: Int = 600
     private(set) var priceToken: String = "SOL"
@@ -91,12 +109,18 @@ final class TicketFlowModel {
         await loadEvent()
     }
 
-    /// Called by the auth screen once the buyer verifies their OTP. Continues
-    /// into checkout (auth is only prompted on the way to ticket selection).
+    /// Called by the auth screen once the buyer verifies their OTP (or a
+    /// signed-in buyer confirms their account). Dispatches to whatever action
+    /// the buyer was signing in to perform — checkout or a join request.
     func didAuthenticate() async {
-        // Pricing needs auth, so refresh it now that we have a session.
-        await loadPricing()
-        step = .ticketSelection
+        switch pendingAuthAction {
+        case .checkout:
+            // Pricing needs auth, so refresh it now that we have a session.
+            await loadPricing()
+            step = .ticketSelection
+        case .requestJoin:
+            await performRequestToJoin()
+        }
     }
 
     private func loadEvent() async {
@@ -104,6 +128,7 @@ final class TicketFlowModel {
         do {
             let event = try await api.fetchEvent(id: eventID)
             self.event = event
+            joinRequestStatus = event.viewerRequest?.status
             priceToken = event.paymentTokenOrDefault
             step = .eventDetails
             // Fees + price quote are public, so load them now; the checkout
@@ -130,10 +155,18 @@ final class TicketFlowModel {
 
     // MARK: - Navigation
 
+    /// What the buyer is signing in to do, resolved after the auth step.
+    private enum PendingAuthAction {
+        case checkout
+        case requestJoin
+    }
+    private var pendingAuthAction: PendingAuthAction = .checkout
+
     /// Buyer tapped "Buy Tickets" / "RSVP". Always show the auth screen: signed-
     /// out buyers sign in, and signed-in buyers confirm (or switch) the account
     /// they're checking out with before proceeding.
     func showTicketSelection() async {
+        pendingAuthAction = .checkout
         step = .auth
     }
 
@@ -186,7 +219,18 @@ final class TicketFlowModel {
         quantities.values.reduce(0, +)
     }
 
-    var hasSelection: Bool { totalTicketCount > 0 }
+    /// Free events are always selectable (the RSVP quantity is floored at 1,
+    /// matching the app); paid events need at least one ticket picked.
+    var hasSelection: Bool {
+        if event?.isPaid == false { return rsvpQuantity >= 1 }
+        return totalTicketCount > 0
+    }
+
+    /// Whether the viewer must be approved before RSVP / checkout is allowed.
+    /// True when the event requires approval and the viewer isn't yet approved.
+    var needsApproval: Bool {
+        event?.requiresApproval == true && joinRequestStatus != "approved"
+    }
 
     /// Crypto conversion for a cents amount, matching the app's
     /// `_formatTokenAmount`. Returns nil for card-only events or when no quote.
@@ -213,17 +257,51 @@ final class TicketFlowModel {
 
     // MARK: - Checkout
 
-    /// Free RSVP path — no payment.
+    /// Free RSVP path — no payment. Free events use the dedicated `/rsvp`
+    /// endpoint (a bare quantity, no ticket line items — matching the app);
+    /// only the rare paid-but-zero-total cart falls back to `/checkout`.
     func checkoutFree() async {
         step = .loading
         do {
-            let result = try await api.freeCheckout(eventID: eventID, items: selectedItems)
+            let isFreeEvent = event?.isPaid == false
+            let result: FreeCheckoutResponse
+            if isFreeEvent {
+                result = try await api.rsvp(eventID: eventID, quantity: rsvpQuantity)
+            } else {
+                result = try await api.freeCheckout(eventID: eventID, items: selectedItems)
+            }
+            let requested = isFreeEvent ? rsvpQuantity : totalTicketCount
             step = .confirmation(.init(
-                ticketCount: result.ticketCount ?? totalTicketCount,
+                ticketCount: result.ticketCount ?? requested,
                 isPending: (result.status ?? "completed") != "completed"
             ))
         } catch {
             setError(message(for: error), returnTo: .ticketSelection)
+        }
+    }
+
+    // MARK: - Approval
+
+    /// Buyer tapped "Request to Join" on an approval-gated event. Like checkout,
+    /// this needs a signed-in account, so route through the auth screen first;
+    /// the request itself runs in `performRequestToJoin` once authenticated.
+    func requestToJoin() async {
+        pendingAuthAction = .requestJoin
+        step = .auth
+    }
+
+    /// Submits the join request after auth, then shows the "Request Sent"
+    /// success screen (mirroring the app's `_submitJoinRequest`, which pushes
+    /// `TicketSuccessScreen` with the "REQUEST SENT!" heading). The details CTA
+    /// is also updated to "Requested" for when the buyer returns.
+    private func performRequestToJoin() async {
+        step = .loading
+        do {
+            let request = try await api.requestJoin(eventID: eventID)
+            joinRequestStatus = request.status
+            step = .confirmation(.init(kind: .requestSent, ticketCount: 0, isPending: false))
+        } catch {
+            setError(message(for: error), returnTo: .eventDetails)
         }
     }
 
@@ -491,6 +569,8 @@ extension Event {
             "stripe_enabled": true,
             "crypto_enabled": true,
             "max_tickets_per_order": 10,
+            "settings": { "requires_approval": false },
+            "viewer_request": null,
             "host": {
                 "user_id": "host-1",
                 "full_name": "Alex Rivera",

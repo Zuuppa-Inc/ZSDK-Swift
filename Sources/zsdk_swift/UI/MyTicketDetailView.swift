@@ -163,12 +163,8 @@ struct MyTicketDetailView: View {
     private var cover: some View {
         let shape = RoundedRectangle(cornerRadius: 8)
         if let urlString = group.coverURL, let url = URL(string: urlString) {
-            AsyncImage(url: url) { phase in
-                if let image = phase.image {
-                    image.resizable().scaledToFill()
-                } else {
-                    ZTheme.secondaryBackground
-                }
+            AnimatedImageView(url: url, contentMode: .fill) {
+                ZTheme.secondaryBackground
             }
             .frame(width: 56, height: 56)
             .clipShape(shape)

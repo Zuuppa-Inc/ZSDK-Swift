@@ -14,6 +14,10 @@ struct ConfirmationView: View {
     private var event: Event? { model.event }
     private let side = ZTheme.sideMargin
 
+    /// The "request sent" variant swaps the heading and drops the
+    /// download-your-tickets section (there are no tickets yet).
+    private var isRequestSent: Bool { confirmation.kind == .requestSent }
+
     // Zuuppa's App Store listing.
     private let appStoreURL = URL(string: "https://apps.apple.com/us/app/zuuppa-global-ticketing/id6761310448")!
 
@@ -33,7 +37,9 @@ struct ConfirmationView: View {
 
                     Spacer().frame(height: 16)
 
-                    Text(L("got_your_tickets", "GOT YOUR TICKETS!"))
+                    Text(isRequestSent
+                        ? L("request_sent", "REQUEST SENT!")
+                        : L("got_your_tickets", "GOT YOUR TICKETS!"))
                         .font(.system(size: 20, weight: .black))
                         .foregroundStyle(ZTheme.text)
                         .multilineTextAlignment(.center)
@@ -111,10 +117,12 @@ struct ConfirmationView: View {
         if let urlString = event?.coverImageURL, let url = URL(string: urlString) {
             // Animated (GIF-capable) banner, capped at half the screen height
             // like the app's ConstrainedBox(maxHeight: size.height * 0.5).
-            AnimatedImageView(url: url)
-                .frame(maxWidth: .infinity)
-                .frame(maxHeight: UIScreen.main.bounds.height * 0.5)
-                .clipShape(RoundedRectangle(cornerRadius: 14))
+            AnimatedImageView(url: url, contentMode: .fit) {
+                ZTheme.secondaryBackground.aspectRatio(16.0 / 9.0, contentMode: .fit)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(maxHeight: UIScreen.main.bounds.height * 0.5)
+            .clipShape(RoundedRectangle(cornerRadius: 14))
         }
     }
 
@@ -122,11 +130,15 @@ struct ConfirmationView: View {
 
     private var downloadSection: some View {
         VStack(spacing: 12) {
-            Text(L("download_title", "Download Zuuppa to\naccess your tickets"))
+            Text(isRequestSent
+                ? L("download_title_request", "Download Zuuppa to\ntrack your request")
+                : L("download_title", "Download Zuuppa to\naccess your tickets"))
                 .font(.system(size: 25, weight: .heavy))
                 .foregroundStyle(ZTheme.text)
                 .multilineTextAlignment(.center)
-            Text(L("download_sub", "Sign in with the same email or phone number you used here, and your tickets will be waiting."))
+            Text(isRequestSent
+                ? L("download_sub_request", "Sign in with the same email or phone number you used here, and you'll be notified when the host responds.")
+                : L("download_sub", "Sign in with the same email or phone number you used here, and your tickets will be waiting."))
                 .font(.system(size: 15))
                 .foregroundStyle(ZTheme.secondaryText)
                 .multilineTextAlignment(.center)

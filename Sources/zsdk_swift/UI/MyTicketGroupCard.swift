@@ -32,14 +32,9 @@ struct MyTicketGroupCard: View {
     @ViewBuilder
     private var cover: some View {
         if let urlString = group.coverURL, let url = URL(string: urlString) {
-            AsyncImage(url: url) { phase in
-                if let image = phase.image {
-                    image.resizable().scaledToFill().blur(radius: 10)
-                } else {
-                    Color.clear
-                }
-            }
-            .clipped()
+            AnimatedImageView(url: url, contentMode: .fill)
+                .blur(radius: 10)
+                .clipped()
         }
     }
 

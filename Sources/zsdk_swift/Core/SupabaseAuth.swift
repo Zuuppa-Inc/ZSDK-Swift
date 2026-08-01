@@ -283,6 +283,13 @@ private extension SupabaseAuth {
     /// behind by a previous install (Keychain items survive app deletion, but
     /// UserDefaults does not — so a missing flag means a fresh install).
     static func clearSessionOnFirstRun(key: String) {
+        // Xcode Previews run in an ephemeral sandbox where UserDefaults isn't
+        // reliably persisted across rebuilds, so the first-run flag reads back
+        // as false every time — which would wipe the Keychain session on every
+        // preview reload and force a re-sign-in. Skip the clear under previews
+        // so a signed-in session survives (runtime is unaffected).
+        if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" { return }
+
         let flag = "com.zuuppa.sdk.hasLaunched"
         let defaults = UserDefaults.standard
         guard !defaults.bool(forKey: flag) else { return }

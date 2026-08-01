@@ -215,6 +215,12 @@ extension ZuuppaTicketsScreen {
     ))
 }
 
+#Preview("Request sent") {
+    ZuuppaTicketsScreen(previewModel: .preview(
+        step: .confirmation(.init(kind: .requestSent, ticketCount: 0, isPending: false))
+    ))
+}
+
 #Preview("Auth") {
     ZuuppaTicketsScreen(previewModel: .preview(step: .auth))
 }

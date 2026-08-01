@@ -62,9 +62,13 @@ public struct Event: Decodable, Sendable {
     public let host: Profile?
     public let cohost: Profile?
     public let ticketTypes: [TicketType]
+    /// Event settings; may be null when no settings row exists.
+    public let settings: EventSettings?
+    /// The signed-in viewer's join-request, when they've made one.
+    public let viewerRequest: ViewerRequest?
 
     enum CodingKeys: String, CodingKey {
-        case id, name, description, status, timezone, latitude, longitude, host, cohost
+        case id, name, description, status, timezone, latitude, longitude, host, cohost, settings
         case startAt = "start_at"
         case endAt = "end_at"
         case venueName = "venue_name"
@@ -77,6 +81,7 @@ public struct Event: Decodable, Sendable {
         case cryptoEnabled = "crypto_enabled"
         case maxTicketsPerOrder = "max_tickets_per_order"
         case ticketTypes = "ticket_types"
+        case viewerRequest = "viewer_request"
     }
 
     /// Ticket types worth showing (active, sorted).
@@ -111,6 +116,28 @@ public struct Event: Decodable, Sendable {
     public var hasCoordinates: Bool {
         latitude != nil && longitude != nil
     }
+
+    /// Whether the host must approve a join request before the viewer can
+    /// RSVP / buy. Defaults to false when the event has no settings row.
+    public var requiresApproval: Bool {
+        settings?.requiresApproval ?? false
+    }
+}
+
+/// Event-level settings, as nested under `settings` in the event detail payload.
+public struct EventSettings: Decodable, Sendable {
+    public let requiresApproval: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case requiresApproval = "requires_approval"
+    }
+}
+
+/// The signed-in viewer's join-request on an event: `pending`, `approved`, or
+/// `declined`. Present in the event detail payload and returned by
+/// `POST /events/{id}/request-join`.
+public struct ViewerRequest: Decodable, Sendable {
+    public let status: String
 }
 
 /// A host / cohost profile summary.
@@ -286,6 +313,12 @@ struct CheckoutItem: Encodable {
 struct CheckoutRequest: Encodable {
     let items: [CheckoutItem]
     let provider: String
+}
+
+/// Body for `POST /events/{id}/rsvp` — the free-event RSVP path, which takes a
+/// bare quantity (no ticket line items).
+struct RsvpRequest: Encodable {
+    let quantity: Int
 }
 
 /// Response from `POST /events/{id}/checkout` with `provider: "stripe"`.

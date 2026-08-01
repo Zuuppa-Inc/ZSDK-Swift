@@ -72,6 +72,21 @@ actor ZuuppaAPI {
         return try await post("/events/\(eventID)/checkout", body: body, as: FreeCheckoutResponse.self)
     }
 
+    /// Free-event RSVP. Unlike `/checkout`, this needs no ticket line items —
+    /// just a quantity — and works for events with no ticket types. Returns
+    /// 201 `{id, status, created_at}`; `status` is `completed` or `pending`
+    /// (pending when the event required approval). Matches the app's `createRsvp`.
+    func rsvp(eventID: String, quantity: Int) async throws -> FreeCheckoutResponse {
+        let body = RsvpRequest(quantity: quantity)
+        return try await post("/events/\(eventID)/rsvp", body: body, as: FreeCheckoutResponse.self)
+    }
+
+    /// Submits a join request for an approval-gated event. Returns the request's
+    /// status (`pending` on a fresh request, or the existing status on conflict).
+    func requestJoin(eventID: String) async throws -> ViewerRequest {
+        try await post("/events/\(eventID)/request-join", body: EmptyBody(), as: ViewerRequest.self)
+    }
+
     // MARK: - My Tickets
 
     /// The signed-in buyer's tickets for one filter tab (upcoming / past /

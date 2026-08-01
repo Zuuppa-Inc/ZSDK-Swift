@@ -42,12 +42,8 @@ struct EventListCard: View {
     private var cover: some View {
         let shape = RoundedRectangle(cornerRadius: 8)
         if let urlString = event.coverImageURL, let url = URL(string: urlString) {
-            AsyncImage(url: url) { phase in
-                if let image = phase.image {
-                    image.resizable().scaledToFill()
-                } else {
-                    placeholder
-                }
+            AnimatedImageView(url: url, contentMode: .fill) {
+                placeholder
             }
             .frame(width: 85, height: 85)
             .clipShape(shape)
