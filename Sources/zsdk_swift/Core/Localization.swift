@@ -62,6 +62,10 @@ private let sdkBundle: Bundle = {
 /// counts render correctly for the resolved language.
 private let sdkLocale = Locale(identifier: sdkLanguage)
 
+/// The language code the SDK is currently rendering in (e.g. "es"), for passing
+/// to server endpoints that localize their output (like the ticket email).
+var currentSDKLanguage: String { sdkLanguage }
+
 func L(_ key: String, _ fallback: String) -> String {
     sdkBundle.localizedString(forKey: key, value: fallback, table: nil)
 }

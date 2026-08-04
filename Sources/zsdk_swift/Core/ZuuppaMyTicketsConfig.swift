@@ -87,13 +87,18 @@ public struct ZuuppaMyTicketsConfig: Sendable {
     /// Whether the detail screen shows the "Add to Apple Wallet" action.
     public var showAddToAppleWallet: Bool
 
+    /// Whether the detail screen shows the "Email Tickets" action, which emails
+    /// the buyer a localized receipt with their tickets attached as a PDF.
+    public var showEmailTickets: Bool
+
     public init(
         tabs: [Tab] = Tab.allCases,
         hostID: String? = nil,
         showAddToCalendar: Bool = true,
         showOpenInMaps: Bool = true,
         showViewReceipt: Bool = true,
-        showAddToAppleWallet: Bool = true
+        showAddToAppleWallet: Bool = true,
+        showEmailTickets: Bool = true
     ) {
         // Guard against an empty tab set leaving the screen with nothing to show.
         self.tabs = tabs.isEmpty ? Tab.allCases : tabs
@@ -102,6 +107,7 @@ public struct ZuuppaMyTicketsConfig: Sendable {
         self.showOpenInMaps = showOpenInMaps
         self.showViewReceipt = showViewReceipt
         self.showAddToAppleWallet = showAddToAppleWallet
+        self.showEmailTickets = showEmailTickets
     }
 
     /// The default configuration: all tabs, all detail actions, no host filter.

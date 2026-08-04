@@ -11,6 +11,7 @@
 "continue_phone" = "Continuar con teléfono";
 "copied" = "%@ copiado";
 "couldnt_add_wallet" = "No se pudieron añadir estas entradas a Apple Wallet.";
+"couldnt_email_tickets" = "No se pudieron enviar tus entradas por correo.";
 "couldnt_load_passes" = "No se pudieron cargar tus pases de Wallet.";
 "couldnt_load_receipt" = "No se pudo cargar el recibo.";
 "couldnt_load_tickets" = "No se pudieron cargar las entradas";
@@ -23,10 +24,13 @@
 "download_sub" = "Inicia sesión con el mismo correo o número de teléfono que usaste aquí y tus entradas te estarán esperando.";
 "download_title" = "Descarga Zuuppa para\nacceder a tus entradas";
 "email" = "Correo electrónico";
+"email_tickets" = "Enviar entradas por correo";
+"email_tickets_enter_email_prompt" = "Tu cuenta no tiene un correo registrado. Introduce la dirección donde quieres recibir tus entradas.";
 "empty_cancelled_sub" = "Las entradas de eventos cancelados\naparecerán aquí";
 "empty_past_sub" = "Las entradas de tus eventos pasados\naparecerán aquí";
 "empty_upcoming_sub" = "Confirma asistencia a eventos y tus entradas\naparecerán aquí";
 "enter_code" = "Introduce el código";
+"enter_your_email" = "Introduce tu correo electrónico";
 "err_decoding" = "Se recibió una respuesta inesperada del servidor.";
 "err_network" = "Fallo de conexión de red. Comprueba tu internet e inténtalo de nuevo.";
 "err_not_auth" = "Debes iniciar sesión para continuar.";
@@ -82,6 +86,7 @@
 "tab_upcoming" = "Próximos";
 "tap_to_copy" = "Toca para copiar";
 "ticket_canceled" = "Entrada cancelada";
+"tickets_emailed" = "Entradas enviadas. Revisa tu bandeja de entrada.";
 "tickets_section" = "ENTRADAS";
 "tickets_title" = "Entradas";
 "to_label" = "A";

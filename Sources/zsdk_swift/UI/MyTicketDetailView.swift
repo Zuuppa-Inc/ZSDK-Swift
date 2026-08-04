@@ -15,9 +15,12 @@ struct MyTicketDetailView: View {
 
     @State private var walletBusy = false
     @State private var receiptBusy = false
+    @State private var emailBusy = false
     @State private var walletPresenter = WalletPassPresenter()
     @State private var actionError: String?
+    @State private var emailToast: String?
     @State private var showReceiptPicker = false
+    @State private var showEmailPrompt = false
 
     private let side = ZTheme.sideMargin
     private var options: ZuuppaMyTicketsConfig { model.options }
@@ -81,6 +84,12 @@ struct MyTicketDetailView: View {
             }
             Button(L("cancel", "Cancel"), role: .cancel) {}
         }
+        .fullScreenCover(isPresented: $showEmailPrompt) {
+            EmailPromptSheet { email in
+                Task { await sendEmail(to: email) }
+            }
+        }
+        .zToast($emailToast)
     }
 
     // MARK: - Header
@@ -308,6 +317,11 @@ struct MyTicketDetailView: View {
                     viewReceipt()
                 }
             }
+            if options.showEmailTickets && !isCanceled && !group.activeTicketTokens.isEmpty {
+                MyTicketActionRow(label: L("email_tickets", "Email Tickets"), icon: .emailOutlined, isBusy: emailBusy) {
+                    emailTickets()
+                }
+            }
         }
     }
 
@@ -387,6 +401,33 @@ struct MyTicketDetailView: View {
             }
         } catch {
             actionError = (error as? ZuuppaError)?.errorDescription ?? L("couldnt_load_receipt", "Couldn't load the receipt.")
+        }
+    }
+
+    /// Emails the buyer their tickets. Accounts created with an email send
+    /// straight away; phone-created accounts (no email on file) first get a
+    /// sheet to enter an address.
+    private func emailTickets() {
+        Task {
+            if await model.hasAccountEmail() {
+                await sendEmail(to: nil)
+            } else {
+                showEmailPrompt = true
+            }
+        }
+    }
+
+    /// Performs the send. `email` is nil for accounts that already have one on
+    /// file (the server uses the account's address then). Both outcomes surface
+    /// through a transient toast, matching the app's SnackBar.
+    private func sendEmail(to email: String?) async {
+        emailBusy = true
+        defer { emailBusy = false }
+        do {
+            try await model.emailTickets(eventID: group.eventID, email: email)
+            emailToast = L("tickets_emailed", "Tickets emailed. Check your inbox.")
+        } catch {
+            emailToast = (error as? ZuuppaError)?.errorDescription ?? L("couldnt_email_tickets", "Couldn't email your tickets.")
         }
     }
 

@@ -366,6 +366,19 @@ struct RsvpRequest: Encodable {
     let quantity: Int
 }
 
+/// Body for `POST /events/{id}/email-tickets`. `lang` localizes the email;
+/// `email` is the fallback recipient for accounts with no email on file (created
+/// via phone number) — the server ignores it when the account already has one.
+struct EmailTicketsRequest: Encodable {
+    let lang: String?
+    let email: String?
+}
+
+/// Response from `POST /events/{id}/email-tickets` — `{ "status": "sent" }`.
+struct EmailTicketsResponse: Decodable {
+    let status: String
+}
+
 /// Response from `POST /events/{id}/checkout` with `provider: "stripe"`.
 struct StripeCheckoutResponse: Decodable {
     let orderID: String

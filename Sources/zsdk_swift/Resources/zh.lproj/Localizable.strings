@@ -11,6 +11,7 @@
 "continue_phone" = "使用手机号继续";
 "copied" = "已复制%@";
 "couldnt_add_wallet" = "无法将这些门票添加到 Apple 钱包。";
+"couldnt_email_tickets" = "无法通过邮件发送你的门票。";
 "couldnt_load_passes" = "无法加载您的钱包卡。";
 "couldnt_load_receipt" = "无法加载收据。";
 "couldnt_load_tickets" = "无法加载门票";
@@ -23,10 +24,13 @@
 "download_sub" = "使用您在此处所用的相同邮箱或手机号登录，您的门票将在等候。";
 "download_title" = "下载 Zuuppa\n以查看您的门票";
 "email" = "邮箱";
+"email_tickets" = "邮件发送门票";
+"email_tickets_enter_email_prompt" = "你的账户未绑定邮箱。请输入用于接收门票的邮箱地址。";
 "empty_cancelled_sub" = "已取消活动的门票\n将显示在这里";
 "empty_past_sub" = "你过往活动的门票\n将显示在这里";
 "empty_upcoming_sub" = "报名参加活动后，你的门票\n将显示在这里";
 "enter_code" = "输入验证码";
+"enter_your_email" = "输入你的邮箱";
 "err_decoding" = "收到服务器的意外响应。";
 "err_network" = "网络连接失败。请检查网络后重试。";
 "err_not_auth" = "您需要登录才能继续。";
@@ -82,6 +86,7 @@
 "tab_upcoming" = "即将开始";
 "tap_to_copy" = "点按以复制";
 "ticket_canceled" = "门票已取消";
+"tickets_emailed" = "门票已发送，请查收邮箱。";
 "tickets_section" = "门票";
 "tickets_title" = "门票";
 "to_label" = "至";

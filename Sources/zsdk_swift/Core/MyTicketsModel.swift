@@ -179,6 +179,20 @@ final class MyTicketsModel {
         try await api.fetchReceipt(orderID: orderID).url
     }
 
+    /// Whether the signed-in buyer has an email on file. When false (a
+    /// phone-created account), the detail screen must collect one before emailing
+    /// tickets, since the server has nowhere to send them.
+    func hasAccountEmail() async -> Bool {
+        await currentIdentity()?.email?.isEmpty == false
+    }
+
+    /// Emails the buyer their tickets for `eventID`, localized to the SDK's
+    /// resolved language. `email` supplies a recipient for phone-created accounts
+    /// with none on file (ignored when the account already has an email).
+    func emailTickets(eventID: String, email: String?) async throws {
+        _ = try await api.emailTickets(eventID: eventID, lang: currentSDKLanguage, email: email)
+    }
+
     // MARK: - Auth passthroughs (for the sign-in gate)
 
     func currentIdentity() async -> AuthIdentity? {

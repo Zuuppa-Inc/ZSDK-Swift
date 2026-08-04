@@ -13,6 +13,7 @@
 "continue_phone" = "Continue with Phone";
 "copied" = "%@ copied";
 "couldnt_add_wallet" = "Couldn't add these tickets to Apple Wallet.";
+"couldnt_email_tickets" = "Couldn't email your tickets.";
 "couldnt_load_passes" = "Couldn't load your Wallet passes.";
 "couldnt_load_receipt" = "Couldn't load the receipt.";
 "couldnt_load_tickets" = "Couldn't load tickets";
@@ -25,10 +26,13 @@
 "download_sub" = "Sign in with the same email or phone number you used here, and your tickets will be waiting.";
 "download_title" = "Download Zuuppa to\naccess your tickets";
 "email" = "Email";
+"email_tickets" = "Email Tickets";
+"email_tickets_enter_email_prompt" = "Your account has no email on file. Enter the address where you'd like your tickets sent.";
 "empty_cancelled_sub" = "Cancelled event tickets\nwill appear here";
 "empty_past_sub" = "Your past event tickets\nwill appear here";
 "empty_upcoming_sub" = "RSVP to events and your tickets\nwill appear here";
 "enter_code" = "Enter the code";
+"enter_your_email" = "Enter your email";
 "err_decoding" = "Received an unexpected response from the server.";
 "err_network" = "Network connection failed. Check your internet and try again.";
 "err_not_auth" = "You need to be signed in to continue.";
@@ -88,6 +92,7 @@
 "tab_upcoming" = "Upcoming";
 "tap_to_copy" = "Tap to copy";
 "ticket_canceled" = "Ticket Canceled";
+"tickets_emailed" = "Tickets emailed. Check your inbox.";
 "tickets_section" = "TICKETS";
 "tickets_title" = "Tickets";
 "to_label" = "TO";

@@ -132,6 +132,15 @@ actor ZuuppaAPI {
         try await get("/orders/\(orderID)/receipt", as: ReceiptResponse.self)
     }
 
+    /// Emails the signed-in buyer their tickets for an event (a localized receipt
+    /// + an attached PDF). `lang` localizes the copy; `email` is the fallback
+    /// recipient for phone-created accounts with no email on file (the server
+    /// ignores it when the account already has an email). Returns `{status: sent}`.
+    func emailTickets(eventID: String, lang: String?, email: String?) async throws -> EmailTicketsResponse {
+        let body = EmailTicketsRequest(lang: lang, email: email)
+        return try await post("/events/\(eventID)/email-tickets", body: body, as: EmailTicketsResponse.self)
+    }
+
     /// The raw `.pkpass` bytes for a ticket, for adding to Apple Wallet. The
     /// body is binary (not JSON), so this bypasses the JSON decoder used by the
     /// other endpoints.

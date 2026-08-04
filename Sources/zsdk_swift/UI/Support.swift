@@ -98,6 +98,53 @@ func formatEventDateRange(start: Date?, end: Date?, timezone: String?) -> String
     return "\(startStr) - \(time.string(from: end)) (\(tzLabel))"
 }
 
+// MARK: - Toast (SnackBar)
+
+/// A transient bottom bar that mirrors the app's Material `SnackBar`: it slides
+/// up from the bottom, shows a short message, and auto-dismisses after a few
+/// seconds. Matches the app's default dark-theme SnackBar look — a light
+/// (inverse-surface) bar with dark text. Bind it to an optional string; set it
+/// non-nil to show the toast and it clears itself when the timer elapses.
+private struct ToastModifier: ViewModifier {
+    @Binding var message: String?
+    var duration: TimeInterval = 4
+
+    func body(content: Content) -> some View {
+        content
+            .overlay(alignment: .bottom) { toast }
+            .animation(.spring(response: 0.35, dampingFraction: 0.85), value: message)
+    }
+
+    @ViewBuilder
+    private var toast: some View {
+        if let message {
+            Text(message)
+                .font(.system(size: 14))
+                .foregroundStyle(ZTheme.background)          // dark text
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
+                .background(ZTheme.text, in: .rect(cornerRadius: 8))  // light bar
+                .shadow(color: .black.opacity(0.3), radius: 8, y: 2)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 16)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+                .task(id: message) {
+                    try? await Task.sleep(nanoseconds: UInt64(duration * 1_000_000_000))
+                    withAnimation { self.message = nil }
+                }
+        }
+    }
+}
+
+extension View {
+    /// Presents an auto-dismissing bottom toast (a Material-SnackBar equivalent)
+    /// whenever `message` is non-nil.
+    func zToast(_ message: Binding<String?>, duration: TimeInterval = 4) -> some View {
+        modifier(ToastModifier(message: message, duration: duration))
+    }
+}
+
 extension UIApplication {
     /// The top-most view controller of the active foreground scene, for
     /// presenting UIKit controllers (Stripe's sheet, `PKAddPassesViewController`,

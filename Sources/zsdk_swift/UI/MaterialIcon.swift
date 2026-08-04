@@ -28,6 +28,7 @@ enum MIcon: String {
     case calendarToday
     case mapOutlined
     case receiptLong
+    case emailOutlined
     case qrCode
     case search
     case close
@@ -59,6 +60,7 @@ enum MIcon: String {
         case .calendarToday: code = 0xe122
         case .mapOutlined: code = 0xf1ae
         case .receiptLong: code = 0xe50d
+        case .emailOutlined: code = 0xf018
         case .qrCode: code = 0xe4f5
         case .search: code = 0xe567
         case .close: code = 0xe16a
