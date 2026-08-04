@@ -121,6 +121,9 @@ final class TicketFlowModel {
     /// signed-in buyer confirms their account). Dispatches to whatever action
     /// the buyer was signing in to perform — checkout or a join request.
     func didAuthenticate() async {
+        // Best-effort telemetry: record the device locale now that we have a
+        // session (no new permissions; the server derives coarse IP location).
+        Task { await api.reportDeviceInfo() }
         switch pendingAuthAction {
         case .checkout:
             // Pricing needs auth, so refresh it now that we have a session.

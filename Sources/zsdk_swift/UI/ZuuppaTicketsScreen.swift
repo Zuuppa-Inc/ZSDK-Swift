@@ -243,7 +243,7 @@ extension ZuuppaTicketsScreen {
 /// The event is fetched unauthenticated (the server serves live events
 /// publicly), so no sign-in is needed just to see the details/selection screens.
 //private let kPreviewEventID = "7da38cff-1e05-4c2e-95ee-9bc8528192e8"
-private let kPreviewEventID = "5fd62227-4a79-4c28-8172-31b277757d79"
+private let kPreviewEventID = "b16cd687-be9c-4361-96fa-8fa61383ae7e"
 
 /// Wrapper that loads a real event before showing the screen, so the live
 /// preview renders actual backend data.

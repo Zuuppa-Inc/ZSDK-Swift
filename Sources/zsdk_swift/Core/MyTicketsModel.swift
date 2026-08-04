@@ -62,6 +62,8 @@ final class MyTicketsModel {
         let identity = await auth.currentIdentity()
         authState = (identity != nil) ? .ready : .signedOut
         if authState == .ready {
+            // Best-effort telemetry for an already-signed-in returning buyer.
+            Task { await api.reportDeviceInfo() }
             await loadAllTabs()
             await loadPendingRequests()
         }
@@ -70,6 +72,7 @@ final class MyTicketsModel {
     /// Called by the auth gate once the buyer verifies their OTP.
     func onAuthenticated() async {
         authState = .ready
+        Task { await api.reportDeviceInfo() }
         await loadAllTabs()
         await loadPendingRequests()
     }

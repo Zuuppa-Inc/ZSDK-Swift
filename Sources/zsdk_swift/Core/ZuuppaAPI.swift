@@ -163,6 +163,35 @@ actor ZuuppaAPI {
         }
     }
 
+    // MARK: - Device info
+
+    /// Reports the device's locale language + region to the server (best-effort,
+    /// once per authenticated launch). Mirrors the Flutter app's launch report.
+    ///
+    /// No new permissions: `language`/`country` come from `Locale.current`; the
+    /// server derives the coarse IP-based location itself. Fire-and-forget — this
+    /// is pure telemetry, so a signed-out caller or any network/decoding error is
+    /// silently ignored (the server returns 204 No Content, so nothing to decode).
+    func reportDeviceInfo() async {
+        // The endpoint requires a bearer; skip entirely when signed out.
+        guard let token = await auth.validAccessToken() else { return }
+
+        let body = DeviceInfoRequest(
+            language: Locale.current.language.languageCode?.identifier,
+            country: Locale.current.region?.identifier
+        )
+
+        let url = config.apiBaseURL.appendingPathComponent("/profiles/me/device-info")
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.httpBody = try? JSONEncoder().encode(body)
+
+        // Best-effort: ignore the response entirely (204 No Content on success).
+        _ = try? await urlSession.data(for: request)
+    }
+
     // MARK: - Request plumbing
 
     private func get<T: Decodable>(
@@ -254,6 +283,14 @@ actor ZuuppaAPI {
 }
 
 private struct EmptyBody: Codable {}
+
+/// Body for `POST /profiles/me/device-info`. Nil fields serialize as JSON null,
+/// which the server treats as "absent" (COALESCE keeps the stored value), so a
+/// missing language or region never clobbers a previously-recorded one.
+private struct DeviceInfoRequest: Encodable {
+    let language: String?
+    let country: String?
+}
 
 private extension ISO8601DateFormatter {
     // These formatters are configured once and only read afterward, so sharing
