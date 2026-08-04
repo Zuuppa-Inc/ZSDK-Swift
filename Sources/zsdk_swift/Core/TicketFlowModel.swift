@@ -88,6 +88,9 @@ final class TicketFlowModel {
 
     // Pricing state, loaded from /config/fees and /events/:id/price-quote.
     private(set) var platformFeeBps: Int = 600
+    // Processing fee (card/Stripe rail only — the server charges 0 on crypto).
+    private(set) var processingFeeBps: Int = 300
+    private(set) var processingFeeFixedCents: Int = 30
     private(set) var priceToken: String = "SOL"
     private(set) var tokenPriceUSD: Double?
     private(set) var btcMinPlatformFeeSats: Int?
@@ -149,8 +152,16 @@ final class TicketFlowModel {
     /// Loads the platform fee and token price quote. Failures are non-fatal —
     /// the breakdown just omits fees/conversions until it succeeds.
     private func loadPricing() async {
-        if let fees = try? await api.fetchFeeConfig(), let bps = fees.platformFeeBps {
-            platformFeeBps = min(max(bps, 0), 1_000_000)
+        if let fees = try? await api.fetchFeeConfig() {
+            if let bps = fees.platformFeeBps {
+                platformFeeBps = min(max(bps, 0), 1_000_000)
+            }
+            if let bps = fees.processingFeeBps {
+                processingFeeBps = min(max(bps, 0), 1_000_000)
+            }
+            if let fixed = fees.processingFeeFixedCents {
+                processingFeeFixedCents = min(max(fixed, 0), 1_000_000)
+            }
         }
         if let quote = try? await api.fetchPriceQuote(eventID: eventID) {
             priceToken = quote.token ?? priceToken
@@ -202,20 +213,34 @@ final class TicketFlowModel {
         }
     }
 
-    /// Platform fee in cents, matching the app's `_feesCents()`:
-    /// ceil(subtotal * bps / 10000), with a BTC sats floor.
+    /// Total buyer fees in cents, matching the app's `_feesCents()`:
+    /// the platform fee (ceil(subtotal * bps / 10000), with a BTC sats floor),
+    /// plus the Stripe processing fee when the card rail is enabled.
     var feesCents: Int {
         let subtotal = subtotalCents
         guard subtotal > 0 else { return 0 }
-        let platformFee = Int((Double(subtotal) * Double(platformFeeBps) / 10_000).rounded(.up))
+        var platformFee = Int((Double(subtotal) * Double(platformFeeBps) / 10_000).rounded(.up))
 
         // Bitcoin: fee is the greater of the percentage fee and a fixed sats floor.
         if priceToken == "BTC", let minSats = btcMinPlatformFeeSats,
            let btcPrice = tokenPriceUSD, btcPrice > 0 {
             let floorCents = Int((Double(minSats) * btcPrice / 100_000_000 * 100).rounded(.up))
-            return max(platformFee, floorCents)
+            platformFee = max(platformFee, floorCents)
         }
-        return platformFee
+
+        // Card (Stripe) rail: the buyer also pays a processing fee, added on top
+        // by the server (checkout_stripe). Crypto rails charge 0, so only include
+        // it when card is enabled.
+        let processingFee = (event?.isStripeEnabled ?? false) ? processingFeeCents(forSubtotal: subtotal) : 0
+
+        return platformFee + processingFee
+    }
+
+    /// Stripe processing fee, matching the server's checkout_stripe:
+    /// ceil(subtotal * processing_fee_bps / 10000) + processing_fee_fixed_cents.
+    func processingFeeCents(forSubtotal subtotal: Int) -> Int {
+        guard subtotal > 0 else { return 0 }
+        return Int((Double(subtotal) * Double(processingFeeBps) / 10_000).rounded(.up)) + processingFeeFixedCents
     }
 
     /// What the buyer pays: subtotal + fees. The app calls this `buyerTotal`.

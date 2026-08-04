@@ -320,9 +320,15 @@ struct HostedEventsResponse: Decodable {
 /// Response from `GET /config/fees`.
 struct FeeConfig: Decodable {
     let platformFeeBps: Int?
+    /// Processing fee, charged on top only for the card (Stripe) rail — the
+    /// server charges processing_fee_cents = 0 on crypto rails.
+    let processingFeeBps: Int?
+    let processingFeeFixedCents: Int?
 
     enum CodingKeys: String, CodingKey {
         case platformFeeBps = "platform_fee_bps"
+        case processingFeeBps = "processing_fee_bps"
+        case processingFeeFixedCents = "processing_fee_fixed_cents"
     }
 }
 
