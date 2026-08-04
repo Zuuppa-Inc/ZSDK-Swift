@@ -21,7 +21,7 @@ struct ExternalCryptoView: View {
 
     // Live state — mirrors the app's State fields.
     @State private var paymentStatus = "pending"
-    @State private var message = "Waiting for payment…"
+    @State private var message = L("pay_waiting", "Waiting for payment")
     @State private var shortfallBaseUnits: Int?
     @State private var finishing = false
 

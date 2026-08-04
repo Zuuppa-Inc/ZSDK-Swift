@@ -353,10 +353,10 @@ struct EventDetailsView: View {
 
     /// Matches the app's `EventDetailScreen` RSVP-bar label logic.
     private func ctaLabel(_ event: Event) -> String {
-        guard event.isPaid else { return "RSVP" }
+        guard event.isPaid else { return L("rsvp", "RSVP") }
         if event.isCryptoEnabled {
-            return "Buy Ticket with \(event.paymentTokenOrDefault)"
+            return Lf("buy_ticket_with", "Buy Ticket with %@", event.paymentTokenOrDefault)
         }
-        return "Buy Tickets"
+        return L("buy_tickets", "Buy Tickets")
     }
 }

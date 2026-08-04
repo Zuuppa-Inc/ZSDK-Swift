@@ -102,3 +102,14 @@
 "we_sent_code" = "हमने %@ पर एक कोड भेजा";
 "your_account" = "आपका खाता";
 "zuuppa_fee" = "Zuuppa शुल्क";
+"approved_buy_ticket" = "स्वीकृत — टिकट खरीदें";
+"awaiting_approval" = "स्वीकृति की प्रतीक्षा में";
+"buy_ticket_with" = "%@ से टिकट खरीदें";
+"buy_tickets" = "टिकट खरीदें";
+"nothing_pending" = "कुछ भी लंबित नहीं";
+"pending_approval_completion_one" = "%d स्वीकृति / पूर्णता लंबित";
+"pending_approval_completion_other" = "%d स्वीकृतियां / पूर्णताएं लंबित";
+"pending_title" = "लंबित";
+"rsvp" = "उपस्थिति की पुष्टि करें";
+"wallet_payment_cancelled" = "वॉलेट भुगतान रद्द कर दिया गया या पूरा नहीं हो सका। कृपया पुनः प्रयास करें।";
+"wallet_payment_not_completed" = "भुगतान पूरा नहीं हो सका। आपसे किसी टिकट के लिए शुल्क नहीं लिया गया है।";

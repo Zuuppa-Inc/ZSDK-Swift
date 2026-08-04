@@ -102,3 +102,14 @@
 "we_sent_code" = "Enviamos um código para %@";
 "your_account" = "sua conta";
 "zuuppa_fee" = "Taxa Zuuppa";
+"approved_buy_ticket" = "Aprovado — Comprar ingresso";
+"awaiting_approval" = "Aguardando aprovação";
+"buy_ticket_with" = "Comprar ingresso com %@";
+"buy_tickets" = "Comprar ingressos";
+"nothing_pending" = "Nada pendente";
+"pending_approval_completion_one" = "%d aprovação / conclusão pendente";
+"pending_approval_completion_other" = "%d aprovações / conclusões pendentes";
+"pending_title" = "Pendente";
+"rsvp" = "Confirmar presença";
+"wallet_payment_cancelled" = "O pagamento pela carteira foi cancelado ou não pôde ser concluído. Tente novamente.";
+"wallet_payment_not_completed" = "Não foi possível concluir o pagamento. Nenhum ingresso foi cobrado de você.";

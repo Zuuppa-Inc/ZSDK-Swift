@@ -396,7 +396,7 @@ final class TicketFlowModel {
                 depositAddress: payment.depositAddress
             ))
         } catch {
-            walletPaymentFailed("The wallet payment was cancelled or couldn't be completed. Please try again.")
+            walletPaymentFailed(L("wallet_payment_cancelled", "The wallet payment was cancelled or couldn't be completed. Please try again."))
             return
         }
 
@@ -423,7 +423,7 @@ final class TicketFlowModel {
                 if res.isFailed {
                     walletPaymentFailed(res.message?.isEmpty == false
                         ? res.message!
-                        : "The payment could not be completed. You have not been charged for a ticket.")
+                        : L("wallet_payment_not_completed", "The payment could not be completed. You have not been charged for a ticket."))
                     return
                 }
             }

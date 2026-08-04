@@ -5,6 +5,8 @@
 "approved_buy_ticket" = "Approved — Buy Ticket";
 "awaiting_approval" = "Awaiting Approval";
 "back" = "Back";
+"buy_ticket_with" = "Buy Ticket with %@";
+"buy_tickets" = "Buy Tickets";
 "cancel" = "Cancel";
 "close" = "Close";
 "confirm_rsvp" = "Confirm RSVP";
@@ -72,6 +74,7 @@
 "processing_payment_sub" = "Confirming your payment and issuing your tickets. This usually takes a few seconds — please keep this screen open.";
 "remaining" = "%@ remaining";
 "resend_code" = "Resend code";
+"rsvp" = "RSVP";
 "select_order" = "Select Order";
 "send" = "SEND";
 "send_code" = "Send Code";
@@ -105,6 +108,8 @@
 "verify" = "Verify";
 "verify_failed_generic" = "Verification failed. Try again.";
 "view_receipt" = "View Receipt";
+"wallet_payment_cancelled" = "The wallet payment was cancelled or couldn't be completed. Please try again.";
+"wallet_payment_not_completed" = "The payment could not be completed. You have not been charged for a ticket.";
 "we_sent_code" = "We sent a code to %@";
 "your_account" = "your account";
 "zuuppa_fee" = "Zuuppa fee";

@@ -102,3 +102,14 @@
 "we_sent_code" = "أرسلنا رمزًا إلى %@";
 "your_account" = "حسابك";
 "zuuppa_fee" = "رسوم Zuuppa";
+"approved_buy_ticket" = "تمت الموافقة — شراء تذكرة";
+"awaiting_approval" = "في انتظار الموافقة";
+"buy_ticket_with" = "شراء تذكرة بواسطة %@";
+"buy_tickets" = "شراء التذاكر";
+"nothing_pending" = "لا يوجد شيء معلّق";
+"pending_approval_completion_one" = "%d موافقة / إكمال معلّق";
+"pending_approval_completion_other" = "%d موافقات / إكمالات معلّقة";
+"pending_title" = "معلّق";
+"rsvp" = "تأكيد الحضور";
+"wallet_payment_cancelled" = "تم إلغاء الدفع عبر المحفظة أو تعذّر إكماله. يرجى المحاولة مرة أخرى.";
+"wallet_payment_not_completed" = "تعذّر إكمال الدفع. لم يتم تحصيل أي رسوم منك مقابل التذكرة.";

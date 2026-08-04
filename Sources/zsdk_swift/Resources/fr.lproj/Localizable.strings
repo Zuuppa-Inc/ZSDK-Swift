@@ -102,3 +102,14 @@
 "we_sent_code" = "Nous avons envoyé un code à %@";
 "your_account" = "votre compte";
 "zuuppa_fee" = "Frais Zuuppa";
+"approved_buy_ticket" = "Approuvé — Acheter un billet";
+"awaiting_approval" = "En attente d'approbation";
+"buy_ticket_with" = "Acheter un billet avec %@";
+"buy_tickets" = "Acheter des billets";
+"nothing_pending" = "Rien en attente";
+"pending_approval_completion_one" = "%d approbation / finalisation en attente";
+"pending_approval_completion_other" = "%d approbations / finalisations en attente";
+"pending_title" = "En attente";
+"rsvp" = "Répondre";
+"wallet_payment_cancelled" = "Le paiement par portefeuille a été annulé ou n'a pas pu être effectué. Veuillez réessayer.";
+"wallet_payment_not_completed" = "Le paiement n'a pas pu être effectué. Aucun billet ne vous a été facturé.";

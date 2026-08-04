@@ -102,3 +102,14 @@
 "we_sent_code" = "我们已向 %@ 发送验证码";
 "your_account" = "您的账户";
 "zuuppa_fee" = "Zuuppa 手续费";
+"approved_buy_ticket" = "已批准 — 购买门票";
+"awaiting_approval" = "等待批准";
+"buy_ticket_with" = "使用 %@ 购买门票";
+"buy_tickets" = "购买门票";
+"nothing_pending" = "没有待处理项";
+"pending_approval_completion_one" = "%d 项待批准 / 待完成";
+"pending_approval_completion_other" = "%d 项待批准 / 待完成";
+"pending_title" = "待处理";
+"rsvp" = "确认出席";
+"wallet_payment_cancelled" = "钱包付款已取消或无法完成，请重试。";
+"wallet_payment_not_completed" = "付款无法完成。未向你收取任何门票费用。";
